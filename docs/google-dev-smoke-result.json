@@ -1,0 +1,28 @@
+{
+  "tested_at": "2026-11-03T09:11:35.666Z",
+  "environment": "development",
+  "drive_root": "1bS5c-YREy8CyeBrEPQ_s8Vrxna2-MBdt",
+  "test_class_root": "1bS5c-YREy8CyeBrEPQ_s8Vrxna2-MBdt",
+  "class_id": "38f80803-be28-40cc-8808-7bec0c3d9747",
+  "student_id": "9014acc7-a573-419a-9603-9cad3686311f",
+  "session_id": "585e5b19-2af9-4309-a395-821194d3528e",
+  "assignment_id": "da5e331e-4ff8-4604-b0ea-aaf72067f19e",
+  "submission_id": "da5e331e-4ff8-4604-b0ea-aaf72067f19e~9014acc7-a573-419a-9603-9cad3686311f",
+  "zero_review_id": "eac074b8-416c-442a-8dbd-2249a0f986a4",
+  "revised_review_id": "aab0874a-3548-4d20-9fb4-5b065a8138c8",
+  "uploaded_file_id": "1ypNP4b89VcTzLAt9pXS7SCzU5Swk_Zgx",
+  "uploaded_file_url": "https://drive.google.com/file/d/1ypNP4b89VcTzLAt9pXS7SCzU5Swk_Zgx/view?usp=drivesdk",
+  "upload_bytes": 2097175,
+  "chunks": 3,
+  "sheet_url": "https://docs.google.com/spreadsheets/d/1f2UH52S_HZXsNBSfUU3c7H7pqMeEFKIYvzZvcxUG-EM/edit",
+  "oauth_refresh": true,
+  "production_touched": false,
+  "mirror_mode": true,
+  "mirrored_folder_count": 8,
+  "mirrored_scenarios": {
+    "direct_session_file": true,
+    "empty_verified_folder_missing_after_deadline": true,
+    "unverified_student_not_missing": true,
+    "teacher_confirmed_late_submission": true
+  }
+}

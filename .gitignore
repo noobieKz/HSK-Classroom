@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.netlify/
+.env*
+!.env.example
+.private/
+.private.*
+coverage/
+*.tsbuildinfo
+test-results/
+artifacts/

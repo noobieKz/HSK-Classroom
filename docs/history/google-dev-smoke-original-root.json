@@ -1,0 +1,20 @@
+{
+  "tested_at": "2026-11-03T08:49:42.106Z",
+  "environment": "development",
+  "drive_root": "1Q8Pu6FehyquFQ5bb6uNOaeYsz-x7yWZs",
+  "test_class_root": "1k0c-lkYssjDf_kecfdrZWqIaR4idpDUb",
+  "class_id": "a3c9e046-c78e-40a0-be17-537fdda4a30c",
+  "student_id": "131797c8-4abd-4be8-be74-3c8ed843cabf",
+  "session_id": "2cb54e14-4d3a-48ea-bd43-866c5a93130b",
+  "assignment_id": "3af1734e-715f-4cb5-aaf4-2fe60c6ea4a3",
+  "submission_id": "3af1734e-715f-4cb5-aaf4-2fe60c6ea4a3~131797c8-4abd-4be8-be74-3c8ed843cabf",
+  "zero_review_id": "8ffa566e-4c7e-455a-a581-232e72f367ea",
+  "revised_review_id": "2babafed-bb32-4de7-9c76-8799c1d7d366",
+  "uploaded_file_id": "1p-PtEqabmTrzgFtpC-hlhFaDn4KOi-9j",
+  "uploaded_file_url": "https://drive.google.com/file/d/1p-PtEqabmTrzgFtpC-hlhFaDn4KOi-9j/view?usp=drivesdk",
+  "upload_bytes": 2097175,
+  "chunks": 3,
+  "sheet_url": "https://docs.google.com/spreadsheets/d/1-zLTyYzST8Pt6-weFTeGReV-cVh0YxIgrEJpdPDCOvY/edit",
+  "oauth_refresh": true,
+  "production_touched": false
+}

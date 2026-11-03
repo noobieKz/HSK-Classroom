@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Netlify automatically installs the Next.js runtime. Do not use static export.
+# Set runtime secrets using the Netlify UI, never in this file.

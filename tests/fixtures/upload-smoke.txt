@@ -1,0 +1,10 @@
+TUỆ MINH CLASSROOM — DỮ LIỆU THỬ
+
+File kiểm tra upload trong thư mục Drive DEV được chủ tài khoản chỉ định.
+Không chứa thông tin học viên hoặc điểm thật.
+
+Tiếng Việt: Học mỗi ngày, tiến bộ mỗi ngày.
+中文：每天进步一点点。
+
+File này được tải qua kết nối Google Drive trong Codex.
+Đây không phải bằng chứng rằng OAuth của website đã được kiểm thử live.
