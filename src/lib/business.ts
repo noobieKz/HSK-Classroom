@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { Data, Row, Table, stableId, includedStudents, lastReview } from './model';
 import { transaction, upsert, loadData } from './sheets';
@@ -49,6 +49,46 @@ function assignmentContext(data: Data, assignmentId: string, studentId?: string)
   return { assignment, session, cls };
 }
 const iso = z.string().datetime({ offset: true });
+export async function persistReviewText(data: Data, row: Row, parent: string) {
+  const submission = find(data, 'Submissions', row.submission_id);
+  const student = find(data, 'Students', submission.student_id);
+  const session = find(data, 'Sessions', submission.session_id);
+  const reviewIds = new Set(
+    data.Reviews.filter((r) => r.submission_id === submission.id).map((r) => r.id),
+  );
+  reviewIds.add(row.id);
+  const attachments = data.ReviewFiles.filter(
+    (f) => reviewIds.has(f.review_id) && !f.id.endsWith('~text'),
+  );
+  const score = row.score ?? '';
+  const content =
+    `Học viên: ${student.name}\nBuổi học: ${session.name}\nĐiểm: ${score === '' ? 'Chưa cho điểm' : `${score}/10`}\n\nNhận xét:\n${row.comment || ''}\n` +
+    (attachments.length
+      ? `\nFile đính kèm:\n${attachments.map((f) => `- ${f.name}: ${f.url}`).join('\n')}\n`
+      : '');
+  const fileId = await saveFeedbackText(parent, content);
+  data.ReviewFiles = data.ReviewFiles.filter(
+    (f) =>
+      !(
+        reviewIds.has(f.review_id) &&
+        f.id.endsWith('~text') &&
+        (f.name === 'Nhan_xet.txt' || /^Nhan_xet_v\d+\.txt$/.test(f.name))
+      ),
+  );
+  data.ReviewFiles.push({
+    id: stableId(submission.id, 'text'),
+    class_id: row.class_id,
+    review_id: row.id,
+    drive_id: fileId,
+    name: 'Nhan_xet.txt',
+    url: fileLink(fileId),
+    mime: 'text/plain',
+    size: String(Buffer.byteLength(content, 'utf8')),
+    created_at: row.created_at || new Date().toISOString(),
+    operation_id: row.operation_id || row.id,
+  });
+  return fileId;
+}
 export async function mutate(action: string, raw: unknown, operationId: string) {
   return transaction(operationId, { action, raw }, async (data) => {
     if (action === 'class') {
@@ -376,33 +416,8 @@ export async function mutate(action: string, raw: unknown, operationId: string) 
         'Không tìm được duy nhất folder học viên trong buổi để lưu file nhận xét.',
       );
       const parent = await feedbackFolder(folders[0].id);
-      const name = 'Nhan_xet.txt';
-      const content = `Học viên: ${student.name}\nBuổi học: ${session.name}\nĐiểm: ${row.score === '' ? 'Chưa cho điểm' : `${row.score}/10`}\n\nNhận xét:\n${row.comment}\n`;
-      const fileId = await saveFeedbackText(parent, content);
       data.Reviews.push(row);
-      const reviewIds = new Set(
-        data.Reviews.filter((r) => r.submission_id === submission.id).map((r) => r.id),
-      );
-      data.ReviewFiles = data.ReviewFiles.filter(
-        (f) =>
-          !(
-            reviewIds.has(f.review_id) &&
-            f.id.endsWith('~text') &&
-            (f.name === 'Nhan_xet.txt' || /^Nhan_xet_v\d+\.txt$/.test(f.name))
-          ),
-      );
-      data.ReviewFiles.push({
-        id: stableId(submission.id, 'text'),
-        class_id: row.class_id,
-        review_id: row.id,
-        drive_id: fileId,
-        name,
-        url: fileLink(fileId),
-        mime: 'text/plain',
-        size: String(Buffer.byteLength(content, 'utf8')),
-        created_at: row.created_at,
-        operation_id: operationId,
-      });
+      const fileId = await persistReviewText(data, row, parent);
       return { id: row.id, file_id: fileId };
     }
     if (action === 'submission-time') {

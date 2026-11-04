@@ -1887,6 +1887,9 @@ function Review({
   const latest = lastReview(data, submission.id);
   const [preview, setPreview] = useState('');
   const [saved, setSaved] = useState(latest?.id || '');
+  const uploadActions = useRef<{ uploadAll: (reviewId: string) => Promise<void> } | null>(null);
+  const pendingReview = useRef<{ signature: string; id: string } | null>(null);
+  const savedVersion = useRef(Number(latest?.version || 0));
   const files = data.SubmissionFiles.filter(
     (f) => f.submission_id === submission.id && f.present === 'true',
   );
@@ -1933,14 +1936,25 @@ function Review({
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
           void run(async () => {
-            const result = await request('review', {
+            const payload = {
               submission_id: submission.id,
-              expected_version: Number(latest?.version || 0),
+              expected_version: Math.max(Number(latest?.version || 0), savedVersion.current),
               score: val(fd, 'score') === '' ? null : Number(val(fd, 'score')),
               comment: val(fd, 'comment'),
-            });
-            setSaved(result.id);
-          }, 'Đã lưu nhận xét và tạo file TXT trong Nhan_xet_GV của học viên.');
+            };
+            const signature = JSON.stringify([payload.score, payload.comment]);
+            let reviewId =
+              pendingReview.current?.signature === signature ? pendingReview.current.id : '';
+            if (!reviewId) {
+              const result = await request('review', payload);
+              reviewId = result.id;
+              savedVersion.current = payload.expected_version + 1;
+              pendingReview.current = { signature, id: reviewId };
+            }
+            setSaved(reviewId);
+            await uploadActions.current?.uploadAll(reviewId);
+            pendingReview.current = null;
+          }, 'Đã lưu nhận xét và file đính kèm vào Nhan_xet_GV của học viên.');
         }}
       >
         <Field label="Điểm (0–10)" hint="Để trống nếu chỉ ghi nhận xét. Điểm 0 là một điểm hợp lệ.">
@@ -1963,7 +1977,19 @@ function Review({
             placeholder="Ghi nhận điểm tốt và điều học viên cần luyện thêm…"
           />
         </Field>
-        <button disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu nhận xét mới'}</button>
+        <Field
+          label="File đính kèm"
+          hint="Chọn tài liệu hoặc video chữa bài. File sẽ được tải lên cùng lúc lưu nhận xét."
+        >
+          <UploadFiles
+            reviewId={saved}
+            request={request}
+            csrf={csrf}
+            actions={uploadActions}
+            disabled={busy}
+          />
+        </Field>
+        <button disabled={busy}>{busy ? 'Đang lưu và tải file…' : 'Lưu nhận xét và file'}</button>
       </form>
       <div className="review-upload">
         <h3>File & video chữa bài</h3>
@@ -1971,11 +1997,6 @@ function Review({
           Lưu nhận xét sẽ tự tạo file TXT trong Nhan_xet_GV của học viên. Bạn có thể tải thêm tài
           liệu hoặc video chữa bài.
         </p>
-        {saved ? (
-          <UploadFiles reviewId={saved} request={request} csrf={csrf} />
-        ) : (
-          <p>Chưa có lần nhận xét để liên kết file.</p>
-        )}
         {data.ReviewFiles.filter((f) => reviews.some((r) => r.id === f.review_id)).map((f) => (
           <a key={f.id} className="file-link" href={f.url} target="_blank" rel="noreferrer">
             {f.name}
@@ -2008,29 +2029,37 @@ type UploadItem = {
   progress?: Progress;
   error?: string;
   working?: boolean;
+  reviewId?: string;
 };
 function UploadFiles({
   reviewId,
   request,
   csrf,
+  actions,
+  disabled,
 }: {
   reviewId: string;
   request: RequestFn;
   csrf: string;
+  actions: { current: { uploadAll: (reviewId: string) => Promise<void> } | null };
+  disabled: boolean;
 }) {
   const [items, setItems] = useState<UploadItem[]>([]);
   const running = useRef(new Set<string>());
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const update = (id: string, patch: Partial<UploadItem>) =>
     setItems((previous) => previous.map((i) => (i.id === id ? { ...i, ...patch } : i)));
-  const upload = async (item: UploadItem) => {
+  const upload = async (item: UploadItem, targetReviewId: string) => {
     if (running.current.has(item.id)) return;
     running.current.add(item.id);
-    update(item.id, { working: true, error: '' });
+    const owner = item.reviewId || targetReviewId;
+    update(item.id, { working: true, error: '', reviewId: owner });
     try {
       let progress = item.progress;
       if (!progress) {
         progress = await request('upload-init', {
-          review_id: reviewId,
+          review_id: owner,
           name: item.file.name,
           mime: item.file.type || 'application/octet-stream',
           size: item.file.size,
@@ -2052,11 +2081,22 @@ function UploadFiles({
       }
     } catch (e) {
       update(item.id, { error: (e as Error).message });
+      throw e;
     } finally {
       running.current.delete(item.id);
       update(item.id, { working: false });
     }
   };
+  useEffect(() => {
+    actions.current = {
+      uploadAll: async (id: string) => {
+        for (const item of itemsRef.current) if (!item.progress?.recorded) await upload(item, id);
+      },
+    };
+    return () => {
+      actions.current = null;
+    };
+  }, [request, csrf, reviewId]);
   return (
     <div>
       <label className="upload-drop">
@@ -2066,6 +2106,7 @@ function UploadFiles({
         <input
           type="file"
           multiple
+          disabled={disabled}
           aria-label="Chọn nhiều file chữa bài"
           onChange={(e) => {
             const next = Array.from(e.target.files || []).map((file) => ({
@@ -2088,17 +2129,13 @@ function UploadFiles({
           {item.progress?.recorded ? (
             <Tag status="submitted">Đã xác nhận trên Drive & Sheets</Tag>
           ) : (
-            <button
-              className="secondary compact"
-              disabled={item.working}
-              onClick={() => void upload(item)}
-            >
+            <span>
               {item.working
                 ? 'Đang upload…'
                 : item.progress
-                  ? 'Kiểm tra / tiếp tục'
-                  : 'Bắt đầu upload'}
-            </button>
+                  ? 'Bấm Lưu để tiếp tục tải'
+                  : 'Sẽ tải khi lưu nhận xét'}
+            </span>
           )}
           {item.error && (
             <p role="alert" className="alert error">
@@ -2109,8 +2146,7 @@ function UploadFiles({
       ))}
       <p className="muted">
         <small>
-          Giữ trang mở trong khi tải. Sau khi tải xong, bấm “Tải lại dữ liệu” để cập nhật danh sách
-          file. Không bấm tạo phiên mới nếu kết quả chưa rõ.
+          Giữ form mở trong khi tải. Nếu bị gián đoạn, bấm Lưu nhận xét và file để tiếp tục tải.
         </small>
       </p>
     </div>

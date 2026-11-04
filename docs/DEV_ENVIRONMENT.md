@@ -2,6 +2,8 @@
 
 Ngày 03/11/2026, theo hai URL chủ tài khoản xác nhận mới nhất.
 
+**File đính kèm trong form nhận xét (04/11/2026):** chọn nhiều tài liệu/video ngay dưới ô nhận xét, bấm Lưu nhận xét và file. Đã kiểm thử thao tác bằng trình duyệt với `gv-feedback-dev.txt`; upload thực tế vào đúng Nhan_xet_GV của Bùi Danh Thái, có một ReviewFiles tương ứng. Đọc lại Google Drive xác nhận đúng parent và Nhan_xet.txt có link đến file upload, vẫn giữ nguyên ID file TXT và chỉ có một file nhận xét. Báo cáo: `test-results/review-attachment.json`; ảnh: `screenshots/review-form-attachment.png`. Upload gián đoạn được tiếp tục từ phiên cũ; cùng nội dung nhận xét chưa tải xong không tạo thêm review khi bấm Lưu lại. 26 tests và build pass; production không thay đổi.
+
 **Quy tắc nhận xét cập nhật 04/11/2026:** mỗi folder Nhan_xet_GV chỉ có một file tự sinh `Nhan_xet.txt`. Sửa nhận xét cập nhật cùng file ID; lịch sử điểm/nhận xét giữ trên Sheets. Đã gộp các bản TXT cũ trên DEV về ID `1zwV4W4xoThk3DEloGltAb9IWXouNQERu`, chuyển bản sinh tự động dư vào thùng rác và giữ file upload thủ công. Các mô tả `Nhan_xet_vXX.txt` bên dưới là lịch sử trước thay đổi này.
 
 Kiểm thử Google thật ngày 04/11: lưu → sửa nội dung mẫu → đọc lại → khôi phục nội dung ban đầu, cả ba lần trả cùng file ID; metadata xác nhận đúng parent, danh sách Drive xác nhận chỉ có một file nhận xét; ReviewFiles có một liên kết hiện tại, Reviews giữ lịch sử. Kết quả `test-results/review-file.json`: `same_file_after_edit=true`, `file_count=1`. 26 tests tự động, TypeScript và build pass.

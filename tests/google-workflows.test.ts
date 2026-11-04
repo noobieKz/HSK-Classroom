@@ -603,7 +603,15 @@ test('Resumable upload verifies Drive and recovers Sheets linkage without upload
     await writeState(sheetStateKey('business-uncertain'), { ...marker!.value, resolved: true });
     const final = await reconcileUpload(progress.id);
     assert.equal(final.recorded, true);
-    assert.equal(mock.state.data.ReviewFiles.length, 1);
+    assert.equal(mock.state.data.ReviewFiles.filter((f) => f.id === progress.id).length, 1);
+    const feedback = mock.state.data.ReviewFiles.find((f) => f.name === 'Nhan_xet.txt')!;
+    assert.ok(feedback);
+    assert.ok(mock.files[feedback.drive_id].content.includes('TEST ONLY.pdf'));
+    assert.ok(
+      mock.files[feedback.drive_id].content.includes(
+        'https://drive.google.com/file/d/generated_file_01/view',
+      ),
+    );
     assert.equal(mock.state.uploadCreates, 1);
     assert.equal(mock.state.uploadedBytes, 10);
     assert.equal((await uploadStatus(progress.id, 'session-id')).recorded, true);

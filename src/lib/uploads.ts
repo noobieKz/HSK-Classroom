@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { googleFetch, accessToken } from './google';
 import { loadData, transaction } from './sheets';
-import { find } from './business';
+import { find, persistReviewText } from './business';
+import { lastReview } from './model';
 import {
   getFile,
   inside,
@@ -196,7 +197,7 @@ async function finalize(upload: Upload) {
   upload.complete = true;
   upload.offset = upload.size;
   await writeState(`upload:${upload.id}`, upload); // persist Drive success before Sheets write
-  await transaction(`upload_${upload.id}`, { upload_id: upload.id }, (data) => {
+  await transaction(`upload_${upload.id}`, { upload_id: upload.id }, async (data) => {
     const review = find(data, 'Reviews', upload.review_id);
     invariant(review.class_id === upload.class_id, 'Liên kết lần chấm không hợp lệ.');
     const mapping = data.DriveMappings.find((m) => m.id === upload.mapping_id);
@@ -220,6 +221,9 @@ async function finalize(upload: Upload) {
         created_at: new Date().toISOString(),
         operation_id: upload.id,
       });
+    const latest = lastReview(data, review.submission_id);
+    invariant(latest, 'Không tìm thấy nhận xét hiện tại.');
+    await persistReviewText(data, latest, upload.parent);
     return { id: upload.id };
   });
   upload.recorded = true;
