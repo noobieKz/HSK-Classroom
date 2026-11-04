@@ -98,6 +98,7 @@ export function excluded(file: DriveFile) {
     .replace(/[\s_-]/g, '');
   return (
     name === 'nhanxetgv' ||
+    (file.mimeType === FOLDER && name === 'btvn') ||
     !!file.appProperties?.tm_homework ||
     file.name.startsWith('.') ||
     /^thumbs\.db$|^desktop\.ini$/i.test(file.name) ||
@@ -179,7 +180,32 @@ export async function generatedId() {
   return result.ids[0];
 }
 export async function saveHomeworkFile(parent: string, requirements: string) {
-  return saveTextFile(parent, 'BTVN.txt', requirements, 'homework');
+  return saveTextFile(await homeworkFolder(parent), 'BTVN.txt', requirements, 'homework');
+}
+export async function homeworkFolder(session: string) {
+  await assertEnvironmentRoot(session);
+  return withLock(`homework-folder:${session}`, async () => {
+    const folder = await ensureFolder(session, 'BTVN');
+    const legacy = (await listFolder(session)).filter((f) => f.name === 'BTVN.txt');
+    const current = (await listFolder(folder)).filter((f) => f.name === 'BTVN.txt');
+    invariant(
+      legacy.length + current.length <= 1 &&
+        [...legacy, ...current].every((f) => f.mimeType === 'text/plain'),
+      'BTVN.txt bị trùng hoặc không phải file văn bản. Kiểm tra Drive trước khi lưu.',
+      409,
+    );
+    if (legacy.length) {
+      await googleJson(
+        `https://www.googleapis.com/drive/v3/files/${driveId(legacy[0].id)}?supportsAllDrives=true&addParents=${driveId(folder)}&removeParents=${driveId(session)}&fields=id,parents`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        },
+      );
+    }
+    return folder;
+  });
 }
 export async function saveFeedbackText(parent: string, content: string) {
   await assertEnvironmentRoot(parent);

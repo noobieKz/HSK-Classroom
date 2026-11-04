@@ -40,7 +40,7 @@ Form chấm bài có ô **File đính kèm** ngay dưới nhận xét. Khi bấm
 
 Khi lưu điểm hoặc nhận xét, website tạo/cập nhật duy nhất `Nhan_xet.txt` trong folder học viên → `Nhan_xet_GV`. Sửa giữ nguyên file ID và thay nội dung bằng điểm/nhận xét mới nhất; lịch sử sửa vẫn lưu trong Reviews trên Sheets. Các bản TXT phiên bản cũ do app tạo được chuyển vào thùng rác, dùng lại ID file mới nhất nếu chưa có file chuẩn. File upload thủ công được giữ nguyên. File env thật và `.private` (kể cả bản nén) không được đưa lên GitHub; cấu hình Google/khóa được giữ trên máy hoặc khai báo trên hosting.
 
-BTVN mỗi buổi: form chỉ có ô **Yêu cầu bài tập** và **Lưu**. Lưu tạo/cập nhật duy nhất `BTVN.txt` (UTF-8) ngay trong folder buổi học, đồng thời lưu nội dung trên Sheets; áp dụng toàn lớp. Sửa giữ nguyên file ID. `BTVN.txt` được loại khỏi bài nộp. DEV đã tạo file cho yêu cầu trước đó ở Buổi 01; không ghi production. Nếu Drive báo lỗi, website không báo lưu thành công.
+BTVN mỗi buổi: form chỉ có ô **Yêu cầu bài tập** và **Lưu**. Lưu tạo/cập nhật duy nhất `BTVN/BTVN.txt` (UTF-8) trong folder buổi học, đồng thời lưu nội dung trên Sheets; áp dụng toàn lớp. Folder **BTVN** chứa thêm audio, video, PDF, ảnh hoặc tài liệu mẫu do GV upload trực tiếp trên Drive, mở từ liên kết ở từng buổi trên web. Sửa yêu cầu giữ nguyên ID TXT và không thay đổi tài liệu khác. File TXT cũ ở gốc buổi được chuyển vào BTVN, giữ nguyên ID. Folder BTVN và nội dung của nó được loại khỏi bài nộp. Chuyển cấu trúc đã thực hiện trên DEV; chưa ghi production. Nếu Drive báo lỗi, website không báo lưu thành công.
 
 Yêu cầu Node.js 22 LTS, npm.
 

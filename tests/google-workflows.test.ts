@@ -12,7 +12,7 @@ import { mutate, syncAssignment } from '../src/lib/business';
 import { accessToken } from '../src/lib/google';
 import { initUpload, uploadChunk, uploadStatus, reconcileUpload } from '../src/lib/uploads';
 import { FOLDER, excluded, saveFeedbackText, submissionFilesByFolder } from '../src/lib/drive';
-import { assertEnvironmentRoot } from '../src/lib/drive';
+import { assertEnvironmentRoot, homeworkFolder, saveHomeworkFile } from '../src/lib/drive';
 import { classroomRoster, studentFolderNames } from '../src/lib/roster';
 
 async function withGoogle(fn: (mock: ReturnType<typeof googleMock>) => Promise<void>) {
@@ -253,8 +253,18 @@ function googleMock() {
     }
     const fileId = url.pathname.split('/').at(-1)!;
     if (files[fileId]) {
-      if (options.method === 'PATCH')
+      if (options.method === 'PATCH') {
         Object.assign(files[fileId], JSON.parse(String(options.body)));
+        if (url.searchParams.has('removeParents'))
+          files[fileId].parents = (files[fileId].parents || []).filter(
+            (id: string) => id !== url.searchParams.get('removeParents'),
+          );
+        if (url.searchParams.has('addParents'))
+          files[fileId].parents = [
+            ...(files[fileId].parents || []),
+            url.searchParams.get('addParents'),
+          ];
+      }
       return json(files[fileId]);
     }
     return json({ error: 'Not found' }, 404);
@@ -302,13 +312,13 @@ test('New session creates BVN/session/12 student folders and retries reuse folde
     );
     assert.deepEqual(
       children.map((f) => f.name).sort(),
-      [...studentFolderNames([...classroomRoster]).values()].sort(),
+      [...studentFolderNames([...classroomRoster]).values(), 'BTVN'].sort(),
     );
     assert.equal(session.name, 'Buổi 02_03/11/2026');
     await mutate('session', payload, 'session_create_0002');
     assert.equal(
       Object.values(mock.files).filter((f) => f.parents?.includes(session.folder_id)).length,
-      12,
+      13,
     );
     assert.equal(Object.values(mock.files).filter((f) => f.name === session.name).length, 1);
   }));
@@ -328,7 +338,10 @@ test('Homework save creates BTVN.txt, edits the same file, keeps Unicode and use
     assert.ok(first.file_id);
     const file = mock.files[first.file_id];
     assert.equal(file.name, 'BTVN.txt');
-    assert.deepEqual(file.parents, ['folder_session_01']);
+    const folder = Object.values(mock.files).find(
+      (f) => f.name === 'BTVN' && f.parents?.includes('folder_session_01'),
+    )!;
+    assert.deepEqual(file.parents, [folder.id]);
     assert.equal(file.content, requirements);
     assert.equal(mock.state.data.Assignments.filter((a) => a.status === 'active').length, 1);
     const saved = mock.state.data.Assignments.find((a) => a.id === first.id)!;
@@ -350,6 +363,42 @@ test('Homework save creates BTVN.txt, edits the same file, keeps Unicode and use
     await assert.rejects(
       mutate('assignment', { session_id: 'session', requirements: '   ' }, 'homework_empty_01'),
     );
+  }));
+
+test('Homework folder migrates the old TXT with the same ID, retains resources and rejects duplicates', async () =>
+  withGoogle(async (mock) => {
+    mock.files.legacy_homework_01 = {
+      id: 'legacy_homework_01',
+      name: 'BTVN.txt',
+      mimeType: 'text/plain',
+      parents: ['folder_session_01'],
+      content: 'Đề cũ',
+    };
+    const folder = await homeworkFolder('folder_session_01');
+    assert.deepEqual(mock.files.legacy_homework_01.parents, [folder]);
+    assert.equal(mock.files.legacy_homework_01.content, 'Đề cũ');
+    mock.files.sample_audio_001 = {
+      id: 'sample_audio_001',
+      name: 'Nghe mẫu.mp3',
+      mimeType: 'audio/mpeg',
+      parents: [folder],
+      content: 'audio',
+    };
+    assert.equal(await homeworkFolder('folder_session_01'), folder);
+    assert.equal(await saveHomeworkFile('folder_session_01', 'Đề sửa'), 'legacy_homework_01');
+    assert.equal(mock.files.legacy_homework_01.content, 'Đề sửa');
+    assert.equal(mock.files.sample_audio_001.content, 'audio');
+    assert.ok(excluded(mock.files[folder]));
+    mock.files.duplicate_homework_01 = {
+      id: 'duplicate_homework_01',
+      name: 'BTVN.txt',
+      mimeType: 'text/plain',
+      parents: ['folder_session_01'],
+      content: 'Không ghi đè',
+    };
+    await assert.rejects(saveHomeworkFile('folder_session_01', 'X'), /bị trùng/);
+    assert.equal(mock.files.legacy_homework_01.content, 'Đề sửa');
+    assert.equal(mock.files.duplicate_homework_01.content, 'Không ghi đè');
   }));
 
 test('Feedback text reuses the newest legacy ID, trashes old generated versions and preserves uploads', async () =>

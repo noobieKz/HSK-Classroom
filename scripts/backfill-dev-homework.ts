@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { environment, DEV_DRIVE_ROOT } from '../src/lib/environment';
 import { loadData } from '../src/lib/sheets';
 import { mutate } from '../src/lib/business';
-import { listFolder } from '../src/lib/drive';
+import { listFolder, homeworkFolder } from '../src/lib/drive';
 import { googleFetch } from '../src/lib/google';
 async function main() {
   nextEnv.loadEnvConfig(process.cwd());
@@ -27,7 +27,9 @@ async function main() {
       },
       randomUUID(),
     );
-    const files = (await listFolder(session.folder_id)).filter((f) => f.name === 'BTVN.txt');
+    const files = (await listFolder(await homeworkFolder(session.folder_id))).filter(
+      (f) => f.name === 'BTVN.txt',
+    );
     assert.equal(files.length, 1);
     const text = await (
       await googleFetch(`https://www.googleapis.com/drive/v3/files/${files[0].id}?alt=media`)

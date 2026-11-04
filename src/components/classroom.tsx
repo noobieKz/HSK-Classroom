@@ -980,7 +980,7 @@ export default function Classroom() {
                 <div>
                   <h2>Hành trình học tập</h2>
                   <p className="muted">
-                    Mỗi buổi có một nội dung BTVN, lưu trên Sheets và file BTVN.txt trong Drive.
+                    Mỗi buổi có folder BTVN chứa yêu cầu bài tập và tài liệu mẫu: audio, video, PDF…
                   </p>
                 </div>
                 <button onClick={() => setModal({ type: 'session' })}>
@@ -1015,6 +1015,16 @@ export default function Classroom() {
                         </button>
                       </div>
                       <p className="session-content">{s.content || 'Chưa có nội dung buổi học.'}</p>
+                      <p>
+                        <a
+                          className="text-button"
+                          href={`/api/app?action=homework-folder&session_id=${encodeURIComponent(s.id)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Mở folder BTVN · thêm tài liệu trên Drive ↗
+                        </a>
+                      </p>
                       <div className="assignment-list">
                         {data.Assignments.filter(
                           (a) => a.session_id === s.id && a.status === 'active',
@@ -1601,7 +1611,7 @@ export default function Classroom() {
                       session_id: modal.row?.session_id,
                       requirements: val(fd, 'requirements'),
                     }),
-                  'Đã lưu yêu cầu và cập nhật BTVN.txt trên Drive.',
+                  'Đã lưu yêu cầu vào BTVN/BTVN.txt trên Drive.',
                 );
               }}
             >

@@ -25,7 +25,7 @@ import {
 } from './drive';
 import { withLock } from './store';
 import { matchesStudentFolder, studentFolderNames, sessionFolderName } from './roster';
-import { listFolder, ensureFolder, renameFolder, saveHomeworkFile } from './drive';
+import { listFolder, ensureFolder, renameFolder, saveHomeworkFile, homeworkFolder } from './drive';
 
 const id = z.string().min(1).max(160);
 const text = z.string().trim().min(1).max(200);
@@ -256,6 +256,7 @@ export async function mutate(action: string, raw: unknown, operationId: string) 
           'Buổi đã có ánh xạ. Tạo buổi mới để đổi folder và giữ lịch sử.',
         );
       await renameFolder(p.folder_id, p.name);
+      await homeworkFolder(p.folder_id);
       if (!old) {
         // Retry reuses already-created folders if Drive/Sheets interrupted partway through.
         for (let start = 0; start < students.length; start += 4)

@@ -1,0 +1,38 @@
+{
+  "dev_only": true,
+  "tested_at": "2026-11-04T09:50:30.036Z",
+  "reports": [
+    {
+      "session": "Buổi 01_01/11/2026",
+      "folder_id": "1WAujYh64AXemM0Rpyd1BVNstH7j3Lqd3",
+      "file_ids": [
+        "1ehJkNabGEI3wSFKFGDe7OVnGmENh7Z8p"
+      ],
+      "legacy_moved_this_run": false
+    },
+    {
+      "session": "Buổi 02_03/11/2026",
+      "folder_id": "1-iZFL9s_D392fS3mqqD8CUG4XUjLy-1A",
+      "file_ids": [
+        "12yX5ToratsBpllVyH8ENOXg1c-WEfrco"
+      ],
+      "legacy_moved_this_run": false
+    }
+  ],
+  "syncs": [
+    {
+      "assignment_id": "d899864b-608a-4a3a-8dfe-8698622c5e65",
+      "result": {
+        "count": 13
+      },
+      "student_file_ids_unchanged": true
+    },
+    {
+      "assignment_id": "41725ff9-0c05-4cce-a321-474b26ab282a",
+      "result": {
+        "count": 0
+      },
+      "student_file_ids_unchanged": true
+    }
+  ]
+}

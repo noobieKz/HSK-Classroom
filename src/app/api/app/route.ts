@@ -61,6 +61,24 @@ export async function GET(request: Request) {
     }
     await requireSession();
     if (action === 'data') return json({ data: await loadData() });
+    if (action === 'homework-folder') {
+      const data = await loadData();
+      const session = find(data, 'Sessions', url.searchParams.get('session_id') || '');
+      const cls = find(data, 'Classes', session.class_id);
+      await assertEnvironmentRoot(cls.root_id);
+      await inside(session.folder_id, cls.root_id);
+      const folders = (await listFolder(session.folder_id)).filter(
+        (f) => f.name === 'BTVN' && f.mimeType === 'application/vnd.google-apps.folder',
+      );
+      invariant(
+        folders.length === 1,
+        'Chưa có folder BTVN duy nhất. Lưu yêu cầu bài tập để tạo folder.',
+        409,
+      );
+      return NextResponse.redirect(
+        `https://drive.google.com/drive/folders/${encodeURIComponent(folders[0].id)}`,
+      );
+    }
     if (action === 'review-text') {
       const data = await loadData();
       const submission = find(data, 'Submissions', url.searchParams.get('submission_id') || '');
