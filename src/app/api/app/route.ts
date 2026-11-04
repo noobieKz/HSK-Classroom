@@ -52,14 +52,21 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const action = url.searchParams.get('action') || 'bootstrap';
     if (action === 'bootstrap') {
+      console.info('bootstrap: started');
       const session = await getSession();
+      console.info('bootstrap: session checked', { authenticated: !!session });
       if (!session) return json({ authenticated: false, login: loginOptions() });
+      console.info('bootstrap: loading connected services');
+      const google = await googleStatus();
+      console.info('bootstrap: Google status loaded');
+      const sheet = await sheetConfig();
+      console.info('bootstrap: Sheet config loaded');
       return json({
         authenticated: true,
         user: session.email ? { email: session.email } : null,
         csrf: session.csrf,
-        google: await googleStatus(),
-        sheet: await sheetConfig(),
+        google,
+        sheet,
         environment: environment(),
       });
     }

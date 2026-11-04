@@ -262,7 +262,10 @@ export default function Classroom() {
   const refreshSequence = useRef(0);
   const refresh = useCallback(async () => {
     const sequence = ++refreshSequence.current;
-    const response = await fetch('/api/app?action=bootstrap', { cache: 'no-store' });
+    const response = await fetch('/api/app?action=bootstrap', {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
+    });
     const result = await response.json();
     if (sequence !== refreshSequence.current) return;
     if (!response.ok) throw new Error(result.error);
@@ -289,7 +292,13 @@ export default function Classroom() {
   );
   useEffect(() => {
     refresh()
-      .catch((e) => setError(e.message))
+      .catch((e) =>
+        setError(
+          e?.name === 'TimeoutError'
+            ? 'Máy chủ phản hồi quá lâu. Vui lòng tải lại trang sau ít phút.'
+            : e.message,
+        ),
+      )
       .finally(() => setLoading(false));
     const params = new URLSearchParams(location.search);
     if (params.has('login')) {
