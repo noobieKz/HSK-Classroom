@@ -2,9 +2,9 @@
 
 Ứng dụng lớp học dùng Next.js. Trang chính thức: https://hsk-classroom-production.netlify.app. Google Sheets giữ dữ liệu lớp học; Google Drive giữ thư mục, bài nộp và nhận xét. Netlify Blobs giữ trạng thái kỹ thuật được mã hóa, phiên đăng nhập và khóa ghi.
 
-## Một môi trường dữ liệu production
+## Một môi trường production duy nhất
 
-Website Netlify và `http://localhost:3000` dùng **cùng dữ liệu production**, và cả hai được phép ghi/đồng bộ. Localhost là origin riêng để chạy và kiểm thử giao diện, không phải một bộ dữ liệu DEV. Không chuyển `APP_URL` của local thành URL Netlify: OAuth callback, cookie và kiểm tra Origin cần khớp origin thực tế của mỗi instance.
+Mọi thao tác thực tế, kể cả kiểm thử trên dữ liệu thật, được thực hiện tại website production. Không vận hành localhost như một website thứ hai. Mã nguồn vẫn có thể build và chạy unit/integration test cô lập trên máy, không kết nối dữ liệu thật. Theo quyết định của chủ lớp ngày 04/11/2026, **không tạo Netlify personal access token** cho localhost. Nếu sau này cần localhost ghi chung dữ liệu, phải thiết kế lại hoặc cấp quyền vào cùng kho Netlify Blobs; chỉ đổi Drive/Sheet ID là không an toàn.
 
 | Thành phần | Giá trị thống nhất |
 | --- | --- |
@@ -17,15 +17,13 @@ Website Netlify và `http://localhost:3000` dùng **cùng dữ liệu production
 
 Không cấu hình `STORAGE_DRIVER=file` với dữ liệu production. Storage file tạo khóa ghi và phiên kết nối riêng, dẫn tới ghi đồng thời không được bảo vệ. Mã nguồn chặn cấu hình đó. Không tự tạo Sheet mới hoặc namespace mới để “sửa” lỗi kết nối; việc này sẽ tách dữ liệu và phiên Google.
 
-## Chạy local với dữ liệu production
+## Làm việc trên production và kiểm tra mã nguồn
 
-1. Cài Node.js 22 và chạy `npm ci`. `npm run setup` chỉ tạo `.env.local` nếu file chưa tồn tại; không ghi đè. `.env.local` hiện có trên máy này đã được chuẩn bị cho production; bản trước được giữ tại `.env.local.before-production`.
-2. Trong `.env.local`, giữ `APP_URL=http://localhost:3000`, các ID/namespace trong bảng trên, cùng `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_ALLOWED_EMAILS`, `ENCRYPTION_KEY`, `SESSION_SECRET` **đúng giá trị đang dùng trên Netlify**. Không in, gửi chat hoặc commit các secret này.
-3. Thêm `NETLIFY_AUTH_TOKEN` là personal access token có quyền tới site production. Token này chỉ dùng ở local để truy cập cùng Netlify Blobs. Giữ bí mật; thu hồi ở Netlify nếu không còn dùng. `NETLIFY_SITE_ID` phải là Site ID trong bảng. Trên Netlify Functions, SDK dùng context của site; không đặt personal token vào biến môi trường hosting.
-4. Google OAuth web client phải có hai redirect URI chính xác: `http://localhost:3000/api/google/callback` và `https://hsk-classroom-production.netlify.app/api/google/callback`. Hai URI này đã được kiểm tra trong Google Cloud ngày 04/11/2026.
-5. Chạy `npm run dev`, mở `http://localhost:3000`, đăng nhập bằng email giáo viên trong allowlist. Sau khi đăng nhập, đối chiếu danh sách lớp/học viên với production trước khi ghi hoặc đồng bộ.
+1. Mở `https://hsk-classroom-production.netlify.app`, đăng nhập bằng tài khoản giáo viên trong allowlist. Tạo/sửa/đồng bộ và kiểm tra kết quả ngay trên site này.
+2. Khi sửa mã, dùng `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, `npm run test:integration` trên máy. Bộ test cô lập dùng dữ liệu giả lập, không cần token production.
+3. Push branch `main` để Netlify tự deploy. Chỉ thử giao diện với dữ liệu thật sau khi Netlify báo Published. Giữ các secret trong Netlify; không in, gửi chat hoặc commit.
 
-Nếu thiếu token, mã sẽ trả lỗi cấu hình và không ghi bằng storage riêng. Nếu giải mã trạng thái kỹ thuật lỗi, kiểm tra `ENCRYPTION_KEY` với Netlify; không tạo khóa mới hay xóa state. Nếu không đăng nhập được, kiểm tra `GOOGLE_ALLOWED_EMAILS`, OAuth client và callback. `APP_URL` chỉ là origin của instance, không phải URL dữ liệu.
+`.env.local` cũ trên máy được giữ để tránh mất cấu hình nhưng không dùng để vận hành. Không thêm token hoặc chuyển sang `STORAGE_DRIVER=file` để ép localhost ghi production. Nếu giải mã trạng thái kỹ thuật lỗi trên Netlify, kiểm tra `ENCRYPTION_KEY`; không tạo khóa mới hay xóa state. Nếu không đăng nhập được, kiểm tra `GOOGLE_ALLOWED_EMAILS`, OAuth client và callback.
 
 ## Tuyệt đối không tự ý xóa file hoặc dữ liệu
 

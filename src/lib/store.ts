@@ -10,6 +10,10 @@ import { environment } from './environment';
 // Business records live exclusively in Sheets. Strong reads are essential for revocation.
 type Entry<T> = { value: T; etag: string };
 type Condition = { onlyIfNew?: boolean; onlyIfMatch?: string };
+const localOrigin = () => {
+  const hostname = new URL(process.env.APP_URL || 'http://localhost:3000').hostname;
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+};
 function driver() {
   const value = process.env.STORAGE_DRIVER || (process.env.NETLIFY ? 'netlify' : 'file');
   invariant(
@@ -24,7 +28,7 @@ function driver() {
     'Production phải dùng chung Netlify Blobs để bảo vệ khóa ghi và phiên kết nối.',
     503,
   );
-  if (value === 'netlify' && !process.env.NETLIFY)
+  if (value === 'netlify' && localOrigin())
     invariant(
       Boolean(process.env.NETLIFY_SITE_ID && process.env.NETLIFY_AUTH_TOKEN),
       'Local cần NETLIFY_SITE_ID và NETLIFY_AUTH_TOKEN để dùng chung storage production.',
@@ -42,7 +46,7 @@ const blobs = () =>
   getStore({
     name: `tue-minh-technical-v1-${environment().mode}-${process.env.TECHNICAL_NAMESPACE || 'default'}`,
     consistency: 'strong',
-    ...(!process.env.NETLIFY && process.env.NETLIFY_SITE_ID && process.env.NETLIFY_AUTH_TOKEN
+    ...(localOrigin() && process.env.NETLIFY_SITE_ID && process.env.NETLIFY_AUTH_TOKEN
       ? { siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_AUTH_TOKEN }
       : {}),
   });
