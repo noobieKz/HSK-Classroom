@@ -1053,7 +1053,7 @@ export default function Classroom() {
                         </button>
                       </div>
                       <p className="session-content">{s.content || 'Chưa có nội dung buổi học.'}</p>
-                      <p>
+                      <p className="session-resources">
                         <a
                           className="text-button"
                           href={`/api/app?action=homework-folder&session_id=${encodeURIComponent(s.id)}`}
@@ -1096,24 +1096,19 @@ export default function Classroom() {
                           </div>
                         ))}
                       </div>
-                      <button
-                        className="text-button"
-                        onClick={() =>
-                          setModal({
-                            type: 'assignment',
-                            row: data.Assignments.find(
-                              (a) => a.session_id === s.id && a.status === 'active',
-                            ) || { session_id: s.id },
-                          })
-                        }
-                      >
-                        <Icon name="plus" />
-                        {data.Assignments.some(
-                          (a) => a.session_id === s.id && a.status === 'active',
-                        )
-                          ? 'Sửa BTVN'
-                          : 'Thêm BTVN'}
-                      </button>
+                      {!data.Assignments.some(
+                        (a) => a.session_id === s.id && a.status === 'active',
+                      ) && (
+                        <button
+                          className="text-button"
+                          onClick={() =>
+                            setModal({ type: 'assignment', row: { session_id: s.id } })
+                          }
+                        >
+                          <Icon name="plus" />
+                          Thêm BTVN
+                        </button>
+                      )}
                     </article>
                   ))
               ) : (

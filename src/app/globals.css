@@ -907,6 +907,10 @@ legend {
 .assignment-list {
   padding: 0 25px;
 }
+.session-resources {
+  padding: 0 25px;
+  margin: 12px 0 16px;
+}
 .assignment-list > div {
   display: flex;
   align-items: center;
@@ -2039,7 +2043,8 @@ dialog::backdrop {
   .session-title p {
     font-size: 8px;
   }
-  .session-content {
+  .session-content,
+  .session-resources {
     padding: 0 16px;
     font-size: 11px;
   }
