@@ -4,7 +4,7 @@
 
 ## Trạng thái bàn giao
 
-- Đăng nhập cố định **admin / admin**, kiểm tra trên server. Không có màn hình bắt đổi mật khẩu hoặc chức năng đổi mật khẩu, theo yêu cầu mới nhất của chủ tài khoản.
+- Đăng nhập Google bằng email GV trong `GOOGLE_ALLOWED_EMAILS`, xác minh ID token ở server. **admin / admin chỉ còn dành cho localhost DEV**, bị chặn trên production, domain công khai và Netlify kể cả gọi API trực tiếp. Không dùng Firebase; tận dụng OAuth Google hiện có.
 - Có giao diện tiếng Việt responsive: tổng quan, học viên, buổi học/bài tập, xác minh Drive, bài nộp/chấm bài, lịch sử, báo cáo CSV, kết nối và phục hồi.
 - Đã viết backend OAuth authorization code + state + PKCE, refresh token mã hóa, Sheets có schema và biên nhận thao tác, đồng bộ Drive, resumable upload theo phần 1 MB.
 - Đã chạy build, TypeScript, kiểm thử nghiệp vụ và kiểm thử HTTP. Xem [báo cáo kiểm thử](docs/TESTING.md).
@@ -50,7 +50,7 @@ npm run setup
 npm run dev
 ```
 
-Mở [localhost:3000](http://localhost:3000), đăng nhập `admin / admin`.
+Mở [localhost:3000](http://localhost:3000), chọn **Đăng nhập bằng Google** sau khi cấu hình `GOOGLE_ALLOWED_EMAILS`. Local DEV có thể mở **Đăng nhập DEV bằng mật khẩu** và dùng `admin / admin`.
 
 `setup` tạo `.env.local` với hai khóa ngẫu nhiên, không in secret và không ghi đè file đã có. Bản local hiện tại đã có `.env.local`. Thêm OAuth client qua file này trên máy của bạn; không gửi secret/token vào chat. `.env.local` và `.private/` được gitignore, loại khỏi file tracing của deployment.
 
@@ -64,7 +64,7 @@ Mở [localhost:3000](http://localhost:3000), đăng nhập `admin / admin`.
 4. Authorized redirect URI local chính xác: `http://localhost:3000/api/google/callback`.
 5. Trên Netlify: đặt `APP_URL` thành origin HTTPS thực tế của site dev. URI chính xác là `APP_URL` + `/api/google/callback`, ví dụ `https://ten-site-dev.netlify.app/api/google/callback`. Giao diện **Kết nối & cài đặt → Cấu hình OAuth** hiển thị URI thực tế. Không nhập nguyên tên ví dụ vào Google Cloud.
 6. **Không cần Authorized JavaScript origins**: ứng dụng dùng flow backend, không dùng Google Identity Services hoặc Picker ở trình duyệt.
-7. Nhập `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` vào biến môi trường runtime của Netlify hoặc `.env.local`, không đưa vào source.
+7. Nhập `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_ALLOWED_EMAILS` (email GV chính xác, cách nhau dấu phẩy) vào biến môi trường runtime của Netlify hoặc `.env.local`. Không đưa env thật lên GitHub. Đăng nhập yêu cầu `openid email`, dùng cùng callback `/api/google/callback`; không yêu cầu quyền Drive để đăng nhập.
 
 Scopes ứng dụng thực sự yêu cầu:
 
@@ -102,6 +102,7 @@ OAuth dùng `access_type=offline`, `prompt=consent`, state một lần ràng bu�
 | `SESSION_SECRET`        | Chuỗi ngẫu nhiên ít nhất 32 ký tự; giữ nguyên giữa các lần deploy                        |
 | `GOOGLE_CLIENT_ID`      | OAuth web client ID của project dev                                                      |
 | `GOOGLE_CLIENT_SECRET`  | OAuth client secret của project dev                                                      |
+| `GOOGLE_ALLOWED_EMAILS` | Email GV được phép đăng nhập, chính xác và cách nhau dấu phẩy; không để trống             |
 | `GOOGLE_SPREADSHEET_ID` | Để trống khi khởi tạo lần đầu; chỉ đặt nếu phục hồi sheet ứng dụng đã tạo trong root dev |
 
 Có thể lấy hai khóa đã được tạo trong `.env.local` và nhập trực tiếp trong giao diện cấu hình bí mật Netlify. Không copy toàn bộ file này vào Git. `PRIVATE_DATA_DIR` không sử dụng trên Netlify.

@@ -17,6 +17,8 @@ import {
 type Bootstrap = {
   environment?: { mode: string; root: string };
   authenticated: boolean;
+  login?: { google: boolean; localPassword: boolean };
+  user?: { email: string } | null;
   csrf?: string;
   google?: { configured: boolean; connected: boolean; email: string; callback: string } | null;
   sheet?: { id: string; url: string } | null;
@@ -290,6 +292,13 @@ export default function Classroom() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
     const params = new URLSearchParams(location.search);
+    if (params.has('login')) {
+      if (params.get('login') === 'failed')
+        setError(
+          'Không đăng nhập được Google. Chọn đúng tài khoản giáo viên được cấp quyền hoặc thử đăng nhập lại.',
+        );
+      history.replaceState(null, '', '/');
+    }
     if (params.has('oauth')) {
       if (params.get('oauth') === 'connected') setNotice('Đã kết nối Google.');
       else
@@ -440,38 +449,67 @@ export default function Classroom() {
               {error}
             </div>
           )}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              void run(() =>
-                request('login', { username: val(fd, 'username'), password: val(fd, 'password') }),
-              );
-            }}
+          <button
+            className="full"
+            disabled={busy || !boot?.login?.google}
+            onClick={() =>
+              void run(
+                async () => {
+                  const result = await request('google-login');
+                  location.assign(result.url);
+                },
+                undefined,
+                false,
+              )
+            }
           >
-            <Field label="Tên đăng nhập">
-              <input
-                name="username"
-                autoComplete="username"
-                required
-                maxLength={100}
-                defaultValue="admin"
-              />
-            </Field>
-            <Field label="Mật khẩu">
-              <input
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                maxLength={128}
-                required
-              />
-            </Field>
-            <button className="full" disabled={busy}>
-              {busy ? 'Đang đăng nhập…' : 'Đăng nhập vào lớp học'}
-              <Icon name="arrow" />
-            </button>
-          </form>
+            {busy ? 'Đang chuyển đến Google…' : 'Đăng nhập bằng Google'}
+          </button>
+          {!boot?.login?.google && (
+            <p className="muted">
+              Đăng nhập Google chưa được cấu hình. Liên hệ người quản lý website.
+            </p>
+          )}
+          {boot?.login?.localPassword && (
+            <details className="dev-login">
+              <summary>Đăng nhập DEV bằng mật khẩu</summary>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  void run(() =>
+                    request('login', {
+                      username: val(fd, 'username'),
+                      password: val(fd, 'password'),
+                    }),
+                  );
+                }}
+              >
+                <Field label="Tên đăng nhập">
+                  <input
+                    name="username"
+                    autoComplete="username"
+                    required
+                    maxLength={100}
+                    defaultValue="admin"
+                  />
+                </Field>
+                <Field label="Mật khẩu">
+                  <input
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    maxLength={128}
+                    required
+                  />
+                </Field>
+                <button className="full" disabled={busy}>
+                  {busy ? 'Đang đăng nhập…' : 'Đăng nhập vào lớp học'}
+                  <Icon name="arrow" />
+                </button>
+              </form>
+            </details>
+          )}
           <small className="login-foot">Dữ liệu riêng tư · Chỉ giáo viên có quyền truy cập</small>
         </div>
       </main>

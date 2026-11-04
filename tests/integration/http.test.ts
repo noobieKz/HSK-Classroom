@@ -25,6 +25,8 @@ test(
       GOOGLE_CLIENT_ID: '',
       GOOGLE_CLIENT_SECRET: '',
       GOOGLE_SPREADSHEET_ID: '',
+      GOOGLE_ALLOWED_EMAILS: '',
+      CLASSROOM_ENV: 'development',
     };
     const previousKey = process.env.ENCRYPTION_KEY;
     process.env.ENCRYPTION_KEY = env.ENCRYPTION_KEY;
@@ -81,7 +83,10 @@ test(
         await new Promise((r) => setTimeout(r, 100));
         if (i === 99) throw new Error('Test server did not become ready.');
       }
-      assert.deepEqual(await (await get('bootstrap')).json(), { authenticated: false });
+      assert.deepEqual(await (await get('bootstrap')).json(), {
+        authenticated: false,
+        login: { google: false, localPassword: true },
+      });
       const csp = (await fetch(appUrl)).headers.get('content-security-policy');
       assert.ok(csp, 'Production sends CSP');
       assert.ok(!csp.includes("'unsafe-eval'"), 'Production must not allow eval for dev debugging');

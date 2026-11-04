@@ -1,7 +1,10 @@
 import { sheetStateKey } from '@/lib/sheets';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { login, logout, requireSession, getSession, sameOrigin, csrf } from '@/lib/auth';
+import { login, logout, requireSession, getSession, sameOrigin, csrf, origin } from '@/lib/auth';
+import { cookies } from 'next/headers';
+import { loginOptions } from '@/lib/login-policy';
+import { beginGoogleLogin, googleLoginCookie } from '@/lib/google-login';
 import {
   googleStatus,
   disconnectGoogle,
@@ -50,9 +53,10 @@ export async function GET(request: Request) {
     const action = url.searchParams.get('action') || 'bootstrap';
     if (action === 'bootstrap') {
       const session = await getSession();
-      if (!session) return json({ authenticated: false });
+      if (!session) return json({ authenticated: false, login: loginOptions() });
       return json({
         authenticated: true,
+        user: session.email ? { email: session.email } : null,
         csrf: session.csrf,
         google: await googleStatus(),
         sheet: await sheetConfig(),
@@ -188,6 +192,18 @@ export async function POST(request: Request) {
           .optional(),
       })
       .parse(JSON.parse(text));
+    if (body.action === 'google-login') {
+      const started = await beginGoogleLogin();
+      const secure = origin().startsWith('https:');
+      (await cookies()).set(googleLoginCookie(secure), started.binding, {
+        httpOnly: true,
+        secure,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 600,
+      });
+      return json({ url: started.url });
+    }
     if (body.action === 'login') {
       const p = z
         .object({ username: z.string().max(100), password: z.string().max(128) })

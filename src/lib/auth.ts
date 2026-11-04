@@ -3,9 +3,18 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { verifyPassword, randomToken, digest } from './crypto';
 import { readState, writeState } from './store';
 import { AppError, invariant } from './errors';
+import { allowedGoogleEmails, localPasswordEnabled } from './login-policy';
 
 export type Credentials = { hash: string; version: string };
-export type Session = { id: string; exp: number; version: string; csrf: string };
+export type Session = {
+  id: string;
+  exp: number;
+  version: string;
+  csrf: string;
+  method?: 'google' | 'password';
+  email?: string;
+  sub?: string;
+};
 export function origin() {
   const url = new URL(process.env.APP_URL || 'http://localhost:3000');
   invariant(
@@ -43,7 +52,11 @@ export async function getSession(): Promise<Session | null> {
     return null;
   try {
     const session = JSON.parse(Buffer.from(data, 'base64url').toString()) as Session;
-    const cred = await credentials();
+    const cred = session.method === 'google' ? { version: 'google-v1' } : await credentials();
+    if (session.method === 'google') {
+      if (!session.email || !session.sub || !allowedGoogleEmails().has(session.email.toLowerCase()))
+        return null;
+    } else if (!localPasswordEnabled()) return null;
     if (session.exp < Date.now() || session.version !== cred.version) return null;
     const record = await readState<{ active: boolean }>(`session:${session.id}`);
     return record?.value.active ? session : null;
@@ -67,12 +80,16 @@ export function csrf(request: Request, session: Session) {
     403,
   );
 }
-async function issue(cred: Credentials) {
+async function issue(
+  cred: Pick<Credentials, 'version'>,
+  identity: Pick<Session, 'method' | 'email' | 'sub'> = { method: 'password' },
+) {
   const session: Session = {
     id: randomToken(),
     csrf: randomToken(),
     version: cred.version,
     exp: Date.now() + 8 * 3600_000,
+    ...identity,
   };
   await writeState(`session:${session.id}`, { active: true, expires: session.exp });
   const data = Buffer.from(JSON.stringify(session)).toString('base64url');
@@ -85,12 +102,25 @@ async function issue(cred: Credentials) {
   });
 }
 export async function login(username: string, password: string) {
+  invariant(
+    localPasswordEnabled(),
+    'Đăng nhập mật khẩu chỉ dành cho localhost DEV. Vui lòng đăng nhập Google.',
+    403,
+  );
   const cred = await credentials();
   const valid = verifyPassword(password, cred.hash);
   if (username !== 'admin' || !valid) {
     throw new AppError(401, 'Tên đăng nhập hoặc mật khẩu chưa đúng.');
   }
   await issue(cred);
+}
+export async function issueGoogleSession(identity: { email: string; sub: string }) {
+  invariant(
+    allowedGoogleEmails().has(identity.email.toLowerCase()),
+    'Tài khoản Google không có quyền truy cập.',
+    403,
+  );
+  await issue({ version: 'google-v1' }, { method: 'google', ...identity });
 }
 export async function logout(session: Session) {
   await writeState(`session:${session.id}`, { active: false });

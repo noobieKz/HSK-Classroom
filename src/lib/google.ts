@@ -56,6 +56,7 @@ export async function exchange(params: Record<string, string>) {
     refresh_token?: string;
     expires_in: number;
     scope?: string;
+    id_token?: string;
   }>;
 }
 export async function saveConnection(code: string, verifier: string) {

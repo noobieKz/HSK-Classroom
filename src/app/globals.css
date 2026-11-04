@@ -1274,6 +1274,15 @@ code {
   font-size: 9px;
   margin-top: 32px;
 }
+.dev-login {
+  margin-top: 20px;
+  font-size: 12px;
+}
+.dev-login summary {
+  cursor: pointer;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
 .login > .text-button {
   margin-top: 20px;
 }
