@@ -1563,7 +1563,7 @@ export default function Classroom() {
                       session_number: Number(val(fd, 'session_number')),
                       date: val(fd, 'date'),
                       deadline: dateTime(val(fd, 'deadline')),
-                      folder_id: modal.row ? extractDriveId(val(fd, 'folder_id')) : '',
+                      folder_id: extractDriveId(val(fd, 'folder_id')),
                       content: val(fd, 'content'),
                       status: val(fd, 'status'),
                     }),
@@ -1610,19 +1610,12 @@ export default function Classroom() {
                   />
                 </Field>
               </div>
-              {modal.row ? (
-                <Field
-                  label="Link hoặc ID thư mục buổi học trên Drive"
-                  hint="Thư mục phải nằm trong Drive root của lớp. Có thể tìm bằng trình duyệt Drive ở Cài đặt."
-                >
-                  <input name="folder_id" required defaultValue={modal.row?.folder_id} />
-                </Field>
-              ) : (
-                <p className="muted">
-                  Khi lưu, web tự tạo thư mục BVN → tên buổi học → thư mục mang họ tên từng học viên
-                  đang học trong lớp. Thư mục đã có sẽ được dùng lại.
-                </p>
-              )}
+              <Field
+                label="Link hoặc ID thư mục buổi học trên Drive"
+                hint="Dán link thư mục buổi học đã có để dùng lại. Để trống thì web tự tạo thư mục BVN → buổi học → thư mục học viên. Thư mục phải nằm trong Drive root của lớp."
+              >
+                <input name="folder_id" required={!!modal.row} defaultValue={modal.row?.folder_id} />
+              </Field>
               <Field label="Nội dung buổi học">
                 <textarea
                   name="content"
