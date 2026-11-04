@@ -228,6 +228,13 @@ export default function Classroom() {
   const autoSyncRunning = useRef(false);
   const [autoSyncing, setAutoSyncing] = useState(false);
   const [sessionFolders, setSessionFolders] = useState<Record<string, string>>({});
+  const [sessionSyncResult, setSessionSyncResult] = useState<{
+    created: number;
+    updated: number;
+    unchanged: number;
+    ignored: string[];
+    conflicts: string[];
+  } | null>(null);
   const pending = useRef(new Map<string, string>());
   const request = useCallback(
     async (action: string, payload?: unknown): Promise<any> => {
@@ -1056,11 +1063,43 @@ export default function Classroom() {
                     Mỗi buổi có folder BTVN chứa yêu cầu bài tập và tài liệu mẫu: audio, video, PDF…
                   </p>
                 </div>
-                <button onClick={() => setModal({ type: 'session' })}>
-                  <Icon name="plus" />
-                  Thêm buổi học
-                </button>
+                <div className="button-row">
+                  <button
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() =>
+                      void run(async () => {
+                        const result = await request('sync-sessions', { class_id: classId });
+                        setSessionSyncResult(result);
+                        setSessionId('');
+                        setNotice(
+                          `Đồng bộ Drive: thêm ${result.created}, cập nhật ${result.updated}, giữ nguyên ${result.unchanged} buổi.`,
+                        );
+                      })
+                    }
+                  >
+                    <Icon name="sync" />
+                    Đồng bộ buổi học từ Drive
+                  </button>
+                  <button onClick={() => setModal({ type: 'session' })}>
+                    <Icon name="plus" />
+                    Thêm buổi học
+                  </button>
+                </div>
               </div>
+              {sessionSyncResult &&
+                (sessionSyncResult.ignored.length > 0 || sessionSyncResult.conflicts.length > 0) && (
+                  <div className="card">
+                    <strong>Cần kiểm tra trên Drive</strong>
+                    {sessionSyncResult.ignored.length > 0 && (
+                      <p>Tên không đúng mẫu buổi học: {sessionSyncResult.ignored.join(', ')}.</p>
+                    )}
+                    {sessionSyncResult.conflicts.length > 0 && (
+                      <p>Thư mục trùng hoặc đã gắn với buổi khác: {sessionSyncResult.conflicts.join(', ')}.</p>
+                    )}
+                    <p>Không có thư mục hay bản ghi nào bị xóa.</p>
+                  </div>
+                )}
               {sessions.length ? (
                 sessions
                   .filter((s) => !sessionId || s.id === sessionId)

@@ -47,3 +47,14 @@ export function sessionFolderName(number: number, date: string) {
   const [year, month, day] = date.split('-');
   return `Buổi ${String(number).padStart(2, '0')}_${day}/${month}/${year}`;
 }
+export function parseSessionFolderName(name: string) {
+  const match = /^Buổi\s+(\d{1,3})_(\d{2})\/(\d{2})\/(\d{4})$/u.exec(name.trim());
+  if (!match) return null;
+  const number = Number(match[1]);
+  const date = `${match[4]}-${match[3]}-${match[2]}`;
+  try {
+    return { number, date, name: sessionFolderName(number, date) };
+  } catch {
+    return null;
+  }
+}

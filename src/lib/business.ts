@@ -24,7 +24,8 @@ import {
   feedbackFolder,
 } from './drive';
 import { withLock } from './store';
-import { matchesStudentFolder, studentFolderNames, sessionFolderName } from './roster';
+import { environment } from './environment';
+import { matchesStudentFolder, studentFolderNames, sessionFolderName, parseSessionFolderName } from './roster';
 import { listFolder, ensureFolder, renameFolder, saveHomeworkFile, homeworkFolder } from './drive';
 
 const id = z.string().min(1).max(160);
@@ -96,6 +97,70 @@ export async function persistReviewText(data: Data, row: Row, parent: string) {
     operation_id: row.operation_id || row.id,
   });
   return fileId;
+}
+export async function syncSessionsFromDrive(classId: string, operationId: string) {
+  const snapshot = await loadData();
+  const cls = find(snapshot, 'Classes', classId);
+  await inside(cls.root_id, environment().root, true);
+  const roots = (await listFolder(cls.root_id)).filter((file) => file.name.trim() === 'BVN' && file.mimeType === FOLDER);
+  invariant(roots.length === 1, 'Cần đúng một thư mục BVN trong Drive root.', 409);
+  const folders = (await listFolder(roots[0].id)).filter((file) => file.mimeType === FOLDER);
+  return transaction(operationId, { action: 'sync-sessions', classId }, (data) => {
+    const currentClass = find(data, 'Classes', classId);
+    invariant(currentClass.root_id === cls.root_id, 'Drive root của lớp vừa thay đổi. Tải lại.', 409);
+    const result = { created: 0, updated: 0, unchanged: 0, ignored: [] as string[], conflicts: [] as string[] };
+    const names = new Map<string, number>();
+    for (const folder of folders) {
+      const parsed = parseSessionFolderName(folder.name);
+      if (parsed) names.set(parsed.name, (names.get(parsed.name) || 0) + 1);
+    }
+    for (const folder of folders) {
+      const parsed = parseSessionFolderName(folder.name);
+      if (!parsed) {
+        result.ignored.push(folder.name);
+        continue;
+      }
+      if (names.get(parsed.name)! > 1) {
+        result.conflicts.push(`${folder.name}: nhiều thư mục cùng tên buổi`);
+        continue;
+      }
+      const sameFolder = data.Sessions.find((row) => row.folder_id === folder.id);
+      const sameName = data.Sessions.find(
+        (row) => row.class_id === classId && row.name === parsed.name && row.folder_id !== folder.id,
+      );
+      if (sameName || (sameFolder && sameFolder.class_id !== classId)) {
+        result.conflicts.push(`${folder.name}: buổi học đã gắn với thư mục khác`);
+        continue;
+      }
+      if (sameFolder) {
+        if (sameFolder.name === parsed.name && sameFolder.date === parsed.date) {
+          result.unchanged++;
+        } else {
+          upsert(data, 'Sessions', {
+            ...sameFolder,
+            name: parsed.name,
+            date: parsed.date,
+            version: String(Number(sameFolder.version || 0) + 1),
+          });
+          result.updated++;
+        }
+        continue;
+      }
+      data.Sessions.push({
+        id: randomUUID(),
+        class_id: classId,
+        name: parsed.name,
+        date: parsed.date,
+        deadline: '',
+        folder_id: folder.id,
+        content: '',
+        status: 'active',
+        version: '1',
+      });
+      result.created++;
+    }
+    return result;
+  });
 }
 export async function mutate(action: string, raw: unknown, operationId: string) {
   return transaction(operationId, { action, raw }, async (data) => {

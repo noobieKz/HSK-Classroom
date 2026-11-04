@@ -8,12 +8,12 @@ import { randomBytes } from 'node:crypto';
 import { emptyData, tables, schema, SCHEMA_VERSION, submissionStatus } from '../src/lib/model';
 import { writeState, readState } from '../src/lib/store';
 import { transaction, loadData } from '../src/lib/sheets';
-import { mutate, syncAssignment } from '../src/lib/business';
+import { mutate, syncAssignment, syncSessionsFromDrive } from '../src/lib/business';
 import { accessToken } from '../src/lib/google';
 import { initUpload, uploadChunk, uploadStatus, reconcileUpload } from '../src/lib/uploads';
 import { FOLDER, excluded, saveFeedbackText, submissionFilesByFolder } from '../src/lib/drive';
 import { assertEnvironmentRoot, homeworkFolder, saveHomeworkFile } from '../src/lib/drive';
-import { classroomRoster, studentFolderNames } from '../src/lib/roster';
+import { classroomRoster, studentFolderNames, parseSessionFolderName } from '../src/lib/roster';
 
 async function withGoogle(fn: (mock: ReturnType<typeof googleMock>) => Promise<void>) {
   const dir = await mkdtemp(join(tmpdir(), 'tue-minh-google-'));
@@ -322,6 +322,45 @@ test('New session creates BVN/session/12 student folders and retries reuse folde
       13,
     );
     assert.equal(Object.values(mock.files).filter((f) => f.name === session.name).length, 1);
+  }));
+
+test('Drive session sync imports valid folders, updates by ID and keeps rows after trash', async () =>
+  withGoogle(async (mock) => {
+    assert.equal(parseSessionFolderName('Buổi 02_31/02/2026'), null);
+    assert.equal(parseSessionFolderName('Tài liệu'), null);
+    mock.files.folder_bvn_0001 = {
+      id: 'folder_bvn_0001', name: 'BVN ', mimeType: FOLDER, parents: ['folder_root_0001'],
+    };
+    mock.files.folder_import_01 = {
+      id: 'folder_import_01', name: 'Buổi 02_05/11/2026', mimeType: FOLDER, parents: ['folder_bvn_0001'],
+    };
+    mock.files.folder_other_01 = {
+      id: 'folder_other_01', name: 'Tài liệu khác', mimeType: FOLDER, parents: ['folder_bvn_0001'],
+    };
+    mock.files.folder_duplicate_01 = {
+      id: 'folder_duplicate_01', name: 'Buổi 03_06/11/2026', mimeType: FOLDER, parents: ['folder_bvn_0001'],
+    };
+    mock.files.folder_duplicate_02 = {
+      id: 'folder_duplicate_02', name: 'Buổi 03_06/11/2026', mimeType: FOLDER, parents: ['folder_bvn_0001'],
+    };
+    const first = await syncSessionsFromDrive('class', 'import_sessions_01');
+    assert.equal(first.created, 1);
+    assert.equal(first.ignored.length, 1);
+    assert.equal(first.conflicts.length, 2);
+    const imported = mock.state.data.Sessions.find((s) => s.folder_id === 'folder_import_01')!;
+    assert.equal(imported.date, '2026-11-05');
+    assert.equal(mock.state.data.Sessions.length, 2);
+    const second = await syncSessionsFromDrive('class', 'import_sessions_02');
+    assert.equal(second.created, 0);
+    assert.equal(second.unchanged, 1);
+    mock.files.folder_import_01.name = 'Buổi 02_07/11/2026';
+    const renamed = await syncSessionsFromDrive('class', 'import_sessions_03');
+    assert.equal(renamed.updated, 1);
+    assert.equal(mock.state.data.Sessions.find((s) => s.id === imported.id)?.date, '2026-11-07');
+    mock.files.folder_import_01.trashed = true;
+    const afterTrash = await syncSessionsFromDrive('class', 'import_sessions_04');
+    assert.equal(afterTrash.created, 0);
+    assert.equal(mock.state.data.Sessions.length, 2);
   }));
 
 test('Homework save creates BTVN.txt, edits the same file, keeps Unicode and uses whole class', async () =>

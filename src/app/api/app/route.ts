@@ -20,7 +20,7 @@ import {
   resumeInitialization,
   assertCertain,
 } from '@/lib/sheets';
-import { mutate, syncAssignment, find } from '@/lib/business';
+import { mutate, syncAssignment, syncSessionsFromDrive, find } from '@/lib/business';
 import { listFolder, inside, assertEnvironmentRoot, getFile, FOLDER } from '@/lib/drive';
 import { environment } from '@/lib/environment';
 import { publicError, invariant } from '@/lib/errors';
@@ -347,6 +347,10 @@ export async function POST(request: Request) {
     if (body.action === 'sync') {
       const p = z.object({ assignment_id: z.string().min(1) }).parse(body.payload);
       return json(await syncAssignment(p.assignment_id, body.operationId));
+    }
+    if (body.action === 'sync-sessions') {
+      const p = z.object({ class_id: z.string().min(1) }).parse(body.payload);
+      return json(await syncSessionsFromDrive(p.class_id, body.operationId));
     }
     invariant(
       [

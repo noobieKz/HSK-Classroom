@@ -6,6 +6,8 @@
 
 Mọi thao tác thực tế, kể cả kiểm thử trên dữ liệu thật, được thực hiện tại website production. Không vận hành localhost như một website thứ hai. Mã nguồn vẫn có thể build và chạy unit/integration test cô lập trên máy, không kết nối dữ liệu thật. Theo quyết định của chủ lớp ngày 04/11/2026, **không tạo Netlify personal access token** cho localhost. Nếu sau này cần localhost ghi chung dữ liệu, phải thiết kế lại hoặc cấp quyền vào cùng kho Netlify Blobs; chỉ đổi Drive/Sheet ID là không an toàn.
 
+Trong **Buổi học & bài tập**, nút **Đồng bộ buổi học từ Drive** đọc các thư mục trực tiếp trong `BVN` của Drive root rồi nhập buổi mới vào Sheets. Tên cần theo mẫu `Buổi 02_05/11/2026` với ngày hợp lệ. Folder có cùng ID đã nhập sẽ được giữ nguyên hoặc cập nhật tên/ngày nếu đổi tên trên Drive. Folder trùng tên buổi nhưng khác ID, hoặc tên không đúng mẫu, được báo để kiểm tra và không tự chọn. Folder đã vào Thùng rác không xuất hiện trong lần quét; bản ghi buổi học cũ trong Sheets vẫn được giữ và có cảnh báo. Đồng bộ này không tạo bài tập, không xóa dữ liệu và không sửa file Drive.
+
 | Thành phần | Giá trị thống nhất |
 | --- | --- |
 | Drive root | `1A6QYngslOJiRt7FV9TXE5CI6Uoivf1e8` |
