@@ -188,7 +188,10 @@ function Modal({
     <dialog
       ref={ref}
       className={className}
-      onCancel={close}
+      onCancel={(event) => {
+        event.preventDefault();
+        close();
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) close();
       }}
@@ -218,6 +221,8 @@ export default function Classroom() {
   const [modal, setModal] = useState<ModalState | null>(null),
     [query, setQuery] = useState(''),
     [filter, setFilter] = useState('all');
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  useEffect(() => setPreviewExpanded(false), [modal?.type, modal?.row?.id]);
   const autoSyncRunning = useRef(false);
   const [autoSyncing, setAutoSyncing] = useState(false);
   const pending = useRef(new Map<string, string>());
@@ -1364,7 +1369,11 @@ export default function Classroom() {
       </div>
       {modal && (
         <Modal
-          className={modal.type === 'review' ? 'review-dialog' : undefined}
+          className={
+            modal.type === 'review'
+              ? `review-dialog${previewExpanded ? ' review-dialog-expanded' : ''}`
+              : undefined
+          }
           title={
             (
               {
@@ -1382,6 +1391,10 @@ export default function Classroom() {
             )[modal.type] || 'Thông tin'
           }
           close={() => {
+            if (previewExpanded) {
+              setPreviewExpanded(false);
+              return;
+            }
             if (!busy) setModal(null);
           }}
         >
@@ -1660,6 +1673,8 @@ export default function Classroom() {
           )}
           {modal.type === 'review' && data && (
             <Review
+              previewExpanded={previewExpanded}
+              onPreviewExpandedChange={setPreviewExpanded}
               data={data}
               submission={modal.row!}
               request={request}
@@ -1907,6 +1922,8 @@ function DriveBrowser({
   );
 }
 function Review({
+  previewExpanded,
+  onPreviewExpandedChange,
   data,
   submission,
   request,
@@ -1916,6 +1933,8 @@ function Review({
   onSaved,
   onTime,
 }: {
+  previewExpanded: boolean;
+  onPreviewExpandedChange: (expanded: boolean) => void;
   data: Data;
   submission: Row;
   request: RequestFn;
@@ -1943,10 +1962,15 @@ function Review({
       <section className="review-preview" aria-label="Bài nộp của học viên">
         {preview && (
           <SubmissionPreview
+            expanded={previewExpanded}
+            onExpandedChange={onPreviewExpandedChange}
             files={files}
             selected={preview}
             onSelect={setPreview}
-            onClose={() => setPreview('')}
+            onClose={() => {
+              setPreview('');
+              onPreviewExpandedChange(false);
+            }}
             formatTime={format}
           />
         )}

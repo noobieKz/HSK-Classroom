@@ -6,12 +6,16 @@ export default function SubmissionPreview({
   onSelect,
   onClose,
   formatTime,
+  expanded,
+  onExpandedChange,
 }: {
   files: Row[];
   selected: string;
   onSelect: (id: string) => void;
   onClose: () => void;
   formatTime: (value: string) => string;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
 }) {
   if (!files.length) return null;
   const index = Math.max(
@@ -70,6 +74,14 @@ export default function SubmissionPreview({
         </button>
         <button type="button" className="text-button" onClick={onClose}>
           Ẩn xem trước
+        </button>
+        <button
+          type="button"
+          className="secondary compact"
+          aria-pressed={expanded}
+          onClick={() => onExpandedChange(!expanded)}
+        >
+          {expanded ? 'Thu nhỏ · về chấm bài' : 'Xem toàn màn hình'}
         </button>
       </div>
       <label className="submission-preview-select">

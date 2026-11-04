@@ -12,3 +12,9 @@ Kiểm tra trên localhost DEV ngày 04/11/2026, viewport 1265×712:
 - Nút đóng và điều hướng file vẫn hoạt động. Không thay đổi luồng lưu hoặc upload nền.
 
 Ảnh: `screenshots/review-side-by-side.png`.
+
+## Xem toàn màn hình
+
+Nút **Xem toàn màn hình** mở rộng preview kín cửa sổ ứng dụng, tạm ẩn cột chấm và danh sách file. Vẫn có Trước/Sau, bộ đếm và chọn nhanh file. **Thu nhỏ · về chấm bài**, Esc hoặc nút đóng ở góc sẽ trở về bố cục chấm trước; không xóa nháp. Chế độ này không cần quyền Fullscreen API của trình duyệt và không đổi quyền truy cập Drive.
+
+Đã kiểm tra DEV: mở rộng, chuyển tới file 2/4, Esc thu nhỏ nhưng popup vẫn mở; nhận xét nháp còn nguyên. Đã khôi phục nội dung gốc, không lưu nhận xét thử. Ảnh: `screenshots/full-submission-preview.png`. Mở rộng/thu nhỏ dùng cùng iframe, chỉ đổi bố cục.
