@@ -122,6 +122,7 @@ function googleMock() {
     createdTime: '2026-11-01T00:00:00Z',
     modifiedTime: '2026-11-03T00:00:00Z',
     size: '10',
+    trashed: false,
   };
   const state = {
     data,
@@ -229,11 +230,11 @@ function googleMock() {
       if (state.failRead) return json({ error: 'Upstream failed' }, 503);
       const query = url.searchParams.get('q') || '';
       if (query.includes(session.id))
-        return json({ files: Object.values(files).filter((f) => f.parents?.includes(session.id)) });
+        return json({ files: Object.values(files).filter((f) => !f.trashed && f.parents?.includes(session.id)) });
       if (query.includes(student.id)) {
         // Two pages; feedback subtree and app-owned teacher files must be ignored.
         if (!url.searchParams.has('pageToken'))
-          return json({ files: [file], nextPageToken: 'page2' });
+          return json({ files: file.trashed ? [] : [file], nextPageToken: 'page2' });
         return json({
           files: [
             feedback,
@@ -401,7 +402,7 @@ test('Homework folder migrates the old TXT with the same ID, retains resources a
     assert.equal(mock.files.duplicate_homework_01.content, 'Không ghi đè');
   }));
 
-test('Feedback text reuses the newest legacy ID, trashes old generated versions and preserves uploads', async () =>
+test('Feedback text reuses the newest legacy ID and preserves all older files', async () =>
   withGoogle(async (mock) => {
     mock.files.legacy_file_01 = {
       id: 'legacy_file_01',
@@ -427,7 +428,7 @@ test('Feedback text reuses the newest legacy ID, trashes old generated versions 
     const first = await saveFeedbackText('folder_feedback01', 'Nội dung mới');
     assert.equal(first, 'legacy_file_02');
     assert.equal(mock.files.legacy_file_02.name, 'Nhan_xet.txt');
-    assert.equal(mock.files.legacy_file_01.trashed, true);
+    assert.ok(!mock.files.legacy_file_01.trashed);
     assert.ok(!mock.files.manual_file_01.trashed);
     assert.equal(await saveFeedbackText('folder_feedback01', 'Đã chỉnh sửa'), first);
     assert.equal(mock.files[first].content, 'Đã chỉnh sửa');
@@ -651,10 +652,17 @@ test('Drive pagination, repeat sync, feedback exclusions and failure preservatio
     assert.equal(mock.state.data.SubmissionFiles[0].name, 'Bài nộp thử 中文.pdf');
     assert.equal(mock.state.data.Submissions[0].submitted_at, '2026-11-01T00:00:00.000Z');
     assert.equal(mock.state.data.Submissions[0].timing_source, 'drive_created');
+    mock.files.submission_file01.trashed = true;
+    assert.deepEqual(await syncAssignment('assignment', 'sync_test_deleted_01'), { count: 0 });
+    assert.equal(mock.state.data.SubmissionFiles[0].present, 'false');
+    assert.equal(
+      submissionStatus(mock.state.data, mock.state.data.Assignments[0], 'student').files.length,
+      0,
+    );
     mock.state.failRead = true;
     const result = await syncAssignment('assignment', 'sync_test_0003');
     assert.ok('error' in result);
-    assert.equal(mock.state.data.SubmissionFiles[0].present, 'true');
+    assert.equal(mock.state.data.SubmissionFiles[0].present, 'false');
     assert.equal(mock.state.data.SyncLogs.at(-1)?.status, 'error');
     assert.equal(
       submissionStatus(mock.state.data, mock.state.data.Assignments[0], 'student').status,

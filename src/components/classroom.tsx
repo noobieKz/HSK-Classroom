@@ -227,6 +227,7 @@ export default function Classroom() {
   useEffect(() => setPreviewExpanded(false), [modal?.type, modal?.row?.id]);
   const autoSyncRunning = useRef(false);
   const [autoSyncing, setAutoSyncing] = useState(false);
+  const [sessionFolders, setSessionFolders] = useState<Record<string, string>>({});
   const pending = useRef(new Map<string, string>());
   const request = useCallback(
     async (action: string, payload?: unknown): Promise<any> => {
@@ -322,6 +323,31 @@ export default function Classroom() {
   }, [data, classId]);
   const cls = data?.Classes.find((c) => c.id === classId);
   const sessions = data?.Sessions.filter((s) => s.class_id === classId) || [];
+  useEffect(() => {
+    if (page !== 'sessions' || !classId || !boot?.google?.connected) return;
+    let active = true;
+    fetch(`/api/app?action=session-folders&class_id=${encodeURIComponent(classId)}`, {
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Không kiểm tra được thư mục Drive.');
+        return response.json();
+      })
+      .then((result) => {
+        if (active)
+          setSessionFolders(
+            Object.fromEntries(
+              result.folders.map((f: { id: string; state: string }) => [f.id, f.state]),
+            ),
+          );
+      })
+      .catch(() => {
+        if (active) setSessionFolders({});
+      });
+    return () => {
+      active = false;
+    };
+  }, [page, classId, data, boot?.google?.connected]);
   const assignments =
     data?.Assignments.filter(
       (a) =>
@@ -1052,6 +1078,16 @@ export default function Classroom() {
                               {s.deadline ? `Hạn nộp: ${format(s.deadline)}` : 'Chưa có hạn nộp'} ·{' '}
                               {s.status === 'active' ? 'Đang hoạt động' : 'Đã ngừng'}
                             </p>
+                            {sessionFolders[s.id] === 'missing' && (
+                              <p className="error">
+                                Thư mục Drive của buổi học đã vào Thùng rác hoặc không còn tìm thấy.
+                                Bản ghi buổi học trong Sheets vẫn được giữ. Hãy khôi phục thư mục
+                                từ Thùng rác rồi tải lại dữ liệu.
+                              </p>
+                            )}
+                            {sessionFolders[s.id] === 'unknown' && (
+                              <p className="muted">Chưa kiểm tra được thư mục Drive của buổi học.</p>
+                            )}
                           </div>
                         </div>
                         <button

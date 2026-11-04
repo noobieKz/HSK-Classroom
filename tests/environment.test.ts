@@ -75,6 +75,7 @@ test('Sheets configuration is isolated by environment and root and ignores legac
     await writeState(devKey, { id: 'new_dev_sheet_01' });
     assert.equal((await sheetConfig())?.id, 'new_dev_sheet_01');
     process.env.CLASSROOM_ENV = 'production';
+    process.env.CLASSROOM_TEST_STORAGE = 'isolated';
     process.env.DRIVE_ROOT_ID = PRODUCTION_DRIVE_ROOT;
     assert.notEqual(sheetStateKey('sheet-config'), devKey);
     assert.equal(await sheetConfig(), null);
@@ -83,6 +84,7 @@ test('Sheets configuration is isolated by environment and root and ignores legac
     process.env.DRIVE_ROOT_ID = DEV_DRIVE_ROOT;
     assert.equal((await sheetConfig())?.id, 'new_dev_sheet_01');
   } finally {
+    delete process.env.CLASSROOM_TEST_STORAGE;
     process.env.CLASSROOM_ENV = 'development';
     process.env.DRIVE_ROOT_ID = DEV_DRIVE_ROOT;
     await rm(dir, { recursive: true, force: true });

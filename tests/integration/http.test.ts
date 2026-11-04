@@ -18,6 +18,7 @@ test(
       APP_URL: appUrl,
       PRIVATE_DATA_DIR: dir,
       STORAGE_DRIVER: 'file',
+      CLASSROOM_TEST_STORAGE: 'isolated',
       NETLIFY: '',
       CONTEXT: '',
       ENCRYPTION_KEY: randomBytes(32).toString('base64'),
@@ -27,6 +28,7 @@ test(
       GOOGLE_SPREADSHEET_ID: '',
       GOOGLE_ALLOWED_EMAILS: '',
       CLASSROOM_ENV: 'development',
+      DRIVE_ROOT_ID: '1bS5c-YREy8CyeBrEPQ_s8Vrxna2-MBdt',
     };
     const previousKey = process.env.ENCRYPTION_KEY;
     process.env.ENCRYPTION_KEY = env.ENCRYPTION_KEY;

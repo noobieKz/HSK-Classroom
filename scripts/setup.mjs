@@ -9,18 +9,19 @@ await writeFile(
   '.env.local',
   [
     'APP_URL=http://localhost:3000',
-    'CLASSROOM_ENV=development',
-    'DRIVE_ROOT_ID=1bS5c-YREy8CyeBrEPQ_s8Vrxna2-MBdt',
-    'STORAGE_DRIVER=file',
-    'TECHNICAL_NAMESPACE=default',
-    'PRIVATE_DATA_DIR=.private',
+    'CLASSROOM_ENV=production',
+    'DRIVE_ROOT_ID=1A6QYngslOJiRt7FV9TXE5CI6Uoivf1e8',
+    'STORAGE_DRIVER=netlify',
+    'TECHNICAL_NAMESPACE=tmhsk6c9e4f2a8b1d',
+    'NETLIFY_SITE_ID=a21d7b00-801e-476d-939b-7434696dbbc0',
+    'NETLIFY_AUTH_TOKEN=',
     'ENCRYPTION_KEY=' + randomBytes(32).toString('base64'),
     'SESSION_SECRET=' + randomBytes(48).toString('base64url'),
     'GOOGLE_CLIENT_ID=',
     'GOOGLE_CLIENT_SECRET=',
-    'GOOGLE_SPREADSHEET_ID=',
+    'GOOGLE_SPREADSHEET_ID=1PXje-9wVQm_ts3F0j5NWKqIRKB_DJWcp2HQFqemidX4',
     '',
   ].join('\n'),
   { flag: 'wx', mode: 0o600 },
 );
-console.log('Đã tạo .env.local (gitignore). Đăng nhập bằng tài khoản cố định của website.');
+console.log('Đã tạo .env.local (gitignore). Cần điền secrets production và Netlify token trước khi chạy.');

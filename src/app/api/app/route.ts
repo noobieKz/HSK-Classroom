@@ -21,7 +21,7 @@ import {
   assertCertain,
 } from '@/lib/sheets';
 import { mutate, syncAssignment, find } from '@/lib/business';
-import { listFolder, inside, assertEnvironmentRoot } from '@/lib/drive';
+import { listFolder, inside, assertEnvironmentRoot, getFile, FOLDER } from '@/lib/drive';
 import { environment } from '@/lib/environment';
 import { publicError, invariant } from '@/lib/errors';
 import { readOptionalState, readState, writeState, withLock, Lock } from '@/lib/store';
@@ -72,6 +72,26 @@ export async function GET(request: Request) {
     }
     await requireSession();
     if (action === 'data') return json({ data: await loadData() });
+    if (action === 'session-folders') {
+      const data = await loadData();
+      const cls = find(data, 'Classes', url.searchParams.get('class_id') || '');
+      await assertEnvironmentRoot(cls.root_id);
+      const folders = await Promise.all(
+        data.Sessions.filter((s) => s.class_id === cls.id).map(async (session) => {
+          try {
+            const folder = await getFile(session.folder_id);
+            return {
+              id: session.id,
+              state: folder.mimeType === FOLDER && !folder.trashed ? 'present' : 'missing',
+            };
+          } catch (error) {
+            const status = publicError(error).status;
+            return { id: session.id, state: status === 404 ? 'missing' : 'unknown' };
+          }
+        }),
+      );
+      return json({ folders });
+    }
     if (action === 'homework-folder') {
       const data = await loadData();
       const session = find(data, 'Sessions', url.searchParams.get('session_id') || '');

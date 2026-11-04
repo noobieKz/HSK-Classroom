@@ -17,6 +17,19 @@ function driver() {
     'Cấu hình storage bền vững chưa đúng.',
     503,
   );
+  invariant(
+    environment().mode !== 'production' ||
+      value === 'netlify' ||
+      process.env.CLASSROOM_TEST_STORAGE === 'isolated',
+    'Production phải dùng chung Netlify Blobs để bảo vệ khóa ghi và phiên kết nối.',
+    503,
+  );
+  if (value === 'netlify' && !process.env.NETLIFY)
+    invariant(
+      Boolean(process.env.NETLIFY_SITE_ID && process.env.NETLIFY_AUTH_TOKEN),
+      'Local cần NETLIFY_SITE_ID và NETLIFY_AUTH_TOKEN để dùng chung storage production.',
+      503,
+    );
   if (['deploy-preview', 'branch-deploy'].includes(process.env.CONTEXT || ''))
     invariant(
       process.env.TECHNICAL_NAMESPACE && process.env.TECHNICAL_NAMESPACE !== 'production',
@@ -29,6 +42,9 @@ const blobs = () =>
   getStore({
     name: `tue-minh-technical-v1-${environment().mode}-${process.env.TECHNICAL_NAMESPACE || 'default'}`,
     consistency: 'strong',
+    ...(!process.env.NETLIFY && process.env.NETLIFY_SITE_ID && process.env.NETLIFY_AUTH_TOKEN
+      ? { siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_AUTH_TOKEN }
+      : {}),
   });
 function privateDirectory() {
   return resolve(/* turbopackIgnore: true */ process.env.PRIVATE_DATA_DIR || '.private');

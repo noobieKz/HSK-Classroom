@@ -9,6 +9,7 @@ import { googleJson } from '../src/lib/google';
 import { syncAssignment } from '../src/lib/business';
 
 async function main() {
+  throw new Error('Script DEV lịch sử đã ngừng sử dụng vì có thao tác xóa dữ liệu. Không chạy lại.');
   nextEnv.loadEnvConfig(process.cwd());
   assert.equal(environment().mode, 'development');
   assert.equal(environment().root, DEV_DRIVE_ROOT);

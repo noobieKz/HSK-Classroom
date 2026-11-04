@@ -21,6 +21,7 @@ test(
       CLASSROOM_ENV: 'production',
       PRIVATE_DATA_DIR: dir,
       STORAGE_DRIVER: 'file',
+      CLASSROOM_TEST_STORAGE: 'isolated',
       NETLIFY: '',
       CONTEXT: '',
       SESSION_SECRET: secret,

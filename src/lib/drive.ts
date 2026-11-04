@@ -237,17 +237,7 @@ export async function saveFeedbackText(parent: string, content: string) {
           body: JSON.stringify({ name: 'Nhan_xet.txt' }),
         },
       );
-    const fileId = await saveTextFile(parent, 'Nhan_xet.txt', content, 'feedback');
-    for (const file of legacy.filter((f) => f.id !== fileId))
-      await googleJson(
-        `https://www.googleapis.com/drive/v3/files/${driveId(file.id)}?supportsAllDrives=true&fields=id`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trashed: true }),
-        },
-      );
-    return fileId;
+    return saveTextFile(parent, 'Nhan_xet.txt', content, 'feedback');
   });
 }
 export async function saveTextFile(
