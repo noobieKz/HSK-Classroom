@@ -7,6 +7,7 @@ import {
   average,
   csv,
   lastReview,
+  submissionTiming,
 } from '../src/lib/model';
 import { excluded } from '../src/lib/drive';
 import { cellsRequest } from '../src/lib/sheets';
@@ -71,7 +72,7 @@ test('API failure never turns old submissions or empty scopes into missing', () 
   assert.equal(submissionStatus(d, a, 'student').files.length, 1);
   assert.equal(submissionStatus(d, a, 'student').status, 'sync_error');
 });
-test('Drive timestamps are not a late-submission proof; teacher-confirmed times are', () => {
+test('Earliest Drive creation time determines submission time; teacher correction takes precedence', () => {
   const { d, a } = fixture();
   d.SubmissionFiles.push({
     id: 'file',
@@ -80,7 +81,19 @@ test('Drive timestamps are not a late-submission proof; teacher-confirmed times 
     modified_at: '2026-11-04',
     created_at: '2026-11-02',
   });
-  assert.equal(submissionStatus(d, a, 'student').status, 'timing_unknown');
+  assert.equal(submissionStatus(d, a, 'student').status, 'submitted');
+  d.SubmissionFiles.push({
+    id: 'later',
+    submission_id: 'submission',
+    present: 'true',
+    created_at: '2026-11-05',
+  });
+  assert.equal(submissionStatus(d, a, 'student').submitted_at, '2026-11-02T00:00:00.000Z');
+  d.SubmissionFiles[0].present = 'false';
+  assert.equal(submissionStatus(d, a, 'student').status, 'late');
+  d.Sessions[0].deadline = '';
+  assert.equal(submissionStatus(d, a, 'student').status, 'submitted');
+  d.Sessions[0].deadline = '2026-11-03T00:00:00Z';
   Object.assign(d.Submissions[0], {
     timing_source: 'teacher_verified',
     submitted_at: '2026-11-04T00:00:00Z',
@@ -88,6 +101,21 @@ test('Drive timestamps are not a late-submission proof; teacher-confirmed times 
   assert.equal(submissionStatus(d, a, 'student').status, 'late');
   d.Submissions[0].submitted_at = '2026-11-02T23:00:00Z';
   assert.equal(submissionStatus(d, a, 'student').status, 'submitted');
+});
+
+test('Missing/invalid Drive dates do not fall back to modification or first-seen time', () => {
+  assert.deepEqual(
+    submissionTiming(undefined, [
+      {
+        present: 'true',
+        created_at: 'invalid',
+        modified_at: '2026-11-05',
+        first_seen: '2026-11-06',
+      },
+      { present: 'false', created_at: '2026-11-01' },
+    ]),
+    { submitted_at: '', timing_source: '' },
+  );
 });
 test('Historical enrollment and explicit assignment lists determine required students', () => {
   const { d, a } = fixture();

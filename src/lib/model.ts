@@ -125,6 +125,19 @@ export function lastReview(data: Data, submissionId: string) {
     (a, b) => Number(b.version) - Number(a.version),
   )[0];
 }
+export function submissionTiming(submission: Row | undefined, files: Row[]) {
+  if (
+    submission?.timing_source === 'teacher_verified' &&
+    Number.isFinite(Date.parse(submission.submitted_at))
+  )
+    return { submitted_at: submission.submitted_at, timing_source: 'teacher_verified' };
+  const times = files
+    .filter((f) => f.present === 'true' && Number.isFinite(Date.parse(f.created_at)))
+    .map((f) => Date.parse(f.created_at));
+  return times.length
+    ? { submitted_at: new Date(Math.min(...times)).toISOString(), timing_source: 'drive_created' }
+    : { submitted_at: '', timing_source: '' };
+}
 export function submissionStatus(data: Data, assignment: Row, studentId: string, now = Date.now()) {
   const submission = data.Submissions.find(
     (s) => s.assignment_id === assignment.id && s.student_id === studentId,
@@ -148,21 +161,19 @@ export function submissionStatus(data: Data, assignment: Row, studentId: string,
     mappings.every((m) => m.verified_at <= submission.synced_at) &&
     submission.synced_at <= (latestLog?.finished_at || '');
   const deadline = Date.parse(session?.deadline || '');
+  const timing = submissionTiming(submission, files);
   let status: string;
   if (!success || !currentScope) status = latestLog?.status === 'error' ? 'sync_error' : 'unknown';
   else if (!mapping) status = 'folder_missing';
   else if (files.length)
-    status =
-      submission?.submitted_at &&
-      submission.timing_source === 'teacher_verified' &&
-      Number.isFinite(deadline)
-        ? Date.parse(submission.submitted_at) > deadline
-          ? 'late'
-          : 'submitted'
-        : 'timing_unknown';
+    status = timing.submitted_at
+      ? Number.isFinite(deadline) && Date.parse(timing.submitted_at) > deadline
+        ? 'late'
+        : 'submitted'
+      : 'timing_unknown';
   else status = Number.isFinite(deadline) && now > deadline ? 'missing' : 'awaiting';
   const review = submission && lastReview(data, submission.id);
-  return { submission, files, review, status, syncedAt: latestLog?.finished_at || '' };
+  return { submission, files, review, status, ...timing, syncedAt: latestLog?.finished_at || '' };
 }
 export const statusLabels: Record<string, string> = {
   folder_missing: 'Chưa có thư mục',

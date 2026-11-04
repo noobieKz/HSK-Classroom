@@ -111,10 +111,7 @@ async function main() {
         assert.equal(matches.length, 1, `Missing/duplicate ${uploaded.name}, pass ${pass}`);
         assert.equal(matches[0].mime, uploaded.mime);
       }
-      assert.ok(
-        ['timing_unknown', 'submitted', 'late'].includes(state.status),
-        state.status,
-      );
+      assert.ok(['submitted', 'late'].includes(state.status), state.status);
       return { case: test.case, status: state.status, files: state.files.length };
     });
     syncs.push({ pass, result, statuses });

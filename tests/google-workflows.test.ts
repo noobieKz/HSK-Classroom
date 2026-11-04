@@ -600,6 +600,8 @@ test('Drive pagination, repeat sync, feedback exclusions and failure preservatio
     assert.equal(mock.state.data.DriveMappings[0].drive_id, 'folder_student01');
     assert.equal(mock.state.data.SubmissionFiles.length, 1);
     assert.equal(mock.state.data.SubmissionFiles[0].name, 'Bài nộp thử 中文.pdf');
+    assert.equal(mock.state.data.Submissions[0].submitted_at, '2026-11-01T00:00:00.000Z');
+    assert.equal(mock.state.data.Submissions[0].timing_source, 'drive_created');
     mock.state.failRead = true;
     const result = await syncAssignment('assignment', 'sync_test_0003');
     assert.ok('error' in result);

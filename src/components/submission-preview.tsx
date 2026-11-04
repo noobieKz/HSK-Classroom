@@ -5,11 +5,13 @@ export default function SubmissionPreview({
   selected,
   onSelect,
   onClose,
+  formatTime,
 }: {
   files: Row[];
   selected: string;
   onSelect: (id: string) => void;
   onClose: () => void;
+  formatTime: (value: string) => string;
 }) {
   if (!files.length) return null;
   const index = Math.max(
@@ -90,6 +92,11 @@ export default function SubmissionPreview({
           Mở file này trên Drive ↗
         </a>
       </p>
+      <small className="block muted">
+        {file.created_at
+          ? `Nộp: ${formatTime(file.created_at)} · theo Drive`
+          : 'Drive chưa cung cấp thời điểm tạo file'}
+      </small>
       <iframe
         key={file.drive_id}
         title={`Xem trước ${index + 1}/${files.length}: ${file.name}`}

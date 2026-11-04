@@ -1135,8 +1135,8 @@ export default function Classroom() {
                     <strong>{assignment.name}</strong>
                     <span>{assignment.requirements || 'Chưa có yêu cầu chi tiết.'}</span>
                     <small>
-                      Thời gian nộp chỉ được xác nhận thủ công khi có bằng chứng. Dấu thời gian trên
-                      Drive chỉ là metadata.
+                      Thời điểm nộp lấy theo file được tạo sớm nhất trên Drive. File được chuyển từ
+                      nơi khác vẫn giữ ngày tạo gốc; giáo viên có thể điều chỉnh khi cần.
                     </small>
                   </div>
                   {includedStudents(data, assignment).length ? (
@@ -1183,6 +1183,14 @@ export default function Classroom() {
                                 </td>
                                 <td>
                                   <Tag status={s.status} />
+                                  {s.submitted_at && s.files.length > 0 && (
+                                    <small className="block muted">
+                                      Nộp: {format(s.submitted_at)}
+                                      {s.timing_source === 'drive_created'
+                                        ? ' · theo Drive'
+                                        : ' · GV xác nhận'}
+                                    </small>
+                                  )}
                                   {s.status === 'sync_error' && (
                                     <small className="block muted">
                                       Đang hiển thị file từ lần trước
@@ -1932,7 +1940,14 @@ function Review({
         {files.map((f) => (
           <div key={f.id}>
             <Icon name="file" />
-            <strong>{f.name}</strong>
+            <strong>
+              {f.name}
+              <small className="block muted">
+                {f.created_at
+                  ? `Nộp: ${format(f.created_at)} · theo Drive`
+                  : 'Drive chưa cung cấp thời điểm tạo file'}
+              </small>
+            </strong>
             <button
               className="text-button"
               aria-pressed={preview === f.drive_id}
@@ -1953,10 +1968,11 @@ function Review({
           selected={preview}
           onSelect={setPreview}
           onClose={() => setPreview('')}
+          formatTime={format}
         />
       )}
       <button className="text-button" onClick={onTime}>
-        Xác nhận thời điểm nộp{' '}
+        Điều chỉnh thời điểm nộp{' '}
         {submission.submitted_at ? `· ${format(submission.submitted_at)}` : '· chưa rõ'}
       </button>
       <form

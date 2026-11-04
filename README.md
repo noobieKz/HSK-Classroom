@@ -125,7 +125,7 @@ Tài liệu hosting: [Next.js trên Netlify](https://docs.netlify.com/build/fram
 5. Tại **Bài nộp & chấm bài**, chọn bài tập và **Xác minh Drive** cho từng học viên. Có thể gán folder hoặc file nằm trực tiếp trong buổi. Tên thư mục chỉ giúp người dùng tìm, không tự xác nhận danh tính.
 6. File/thư mục giáo viên không theo chuẩn có thể đánh dấu **bỏ qua khi đếm bài nộp**. `Nhan_xet_GV`, file hệ thống, shortcut và file có nhãn feedback của ứng dụng được loại tự động. Không gán file nằm bên trong cây nhận xét GV thành bài học viên.
 7. Đồng bộ theo bài tập. Phạm vi chưa xác minh giữ trạng thái chưa xác minh. Chỉ kết luận chưa nộp khi scope hiện tại đã đồng bộ thành công và quá hạn. API lỗi giữ file từ lần trước và báo lỗi riêng.
-8. Thời điểm tạo/sửa file có thể khác thời điểm chuyển vào folder. Bản này chỉ tính **nộp muộn khi giáo viên xác nhận thời điểm nộp > hạn nộp**; mặc định file có trạng thái đã nộp nhưng chưa rõ thời điểm.
+8. Thời điểm nộp tự lấy theo **ngày tạo sớm nhất của các file bài nộp hiện có trên Drive**; hiển thị theo giờ Việt Nam. So sánh với hạn nộp để tính nộp muộn. Mỗi file có thời gian riêng trong popup chấm bài. File chuyển từ nơi khác giữ ngày tạo gốc; GV có thể điều chỉnh thời điểm nộp, và lần đồng bộ sau giữ điều chỉnh đó. Ngày sửa file không được dùng làm ngày nộp. Chỉ hiện chưa rõ thời điểm nếu Drive không cung cấp ngày tạo hợp lệ.
 9. Lưu điểm/nhận xét sẽ tạo phiên bản mới, không ghi đè lịch sử. Điểm 0 khác ô chưa có điểm. Upload file sau khi đã có lần chấm, vào đúng folder học viên đã xác minh.
 
 Không có scheduler tự động trong bản này. Không dùng timer trình duyệt để giả lập background sync.

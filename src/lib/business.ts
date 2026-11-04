@@ -1,6 +1,14 @@
 ﻿import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
-import { Data, Row, Table, stableId, includedStudents, lastReview } from './model';
+import {
+  Data,
+  Row,
+  Table,
+  stableId,
+  includedStudents,
+  lastReview,
+  submissionTiming,
+} from './model';
 import { transaction, upsert, loadData } from './sheets';
 import { invariant, publicError } from './errors';
 import {
@@ -623,8 +631,10 @@ export async function syncAssignment(assignmentId: string, operationId: string) 
           const current = data.Submissions.find((s) => s.id === row.id);
           upsert(data, 'Submissions', {
             ...row,
-            submitted_at: current?.submitted_at || '',
-            timing_source: current?.timing_source || '',
+            ...submissionTiming(
+              current,
+              work.SubmissionFiles.filter((f) => f.submission_id === row.id),
+            ),
             version: String(Number(current?.version || 0) + 1),
           });
         }
