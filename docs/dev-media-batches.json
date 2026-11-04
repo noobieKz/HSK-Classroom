@@ -1,0 +1,135 @@
+{
+  "dev_only": true,
+  "tested_at": "2026-11-04T04:52:17.088Z",
+  "cases": [
+    {
+      "case": "multiple-images",
+      "student_id": "5cfb5ccf-30e4-4106-8a20-c3c77e8dcffa",
+      "student": "Đặng Ngọc Anh Vũ",
+      "folder_id": "1l1Dm9moNZAPXmJizUXQQlizlzgmBQ0bD",
+      "files": [
+        {
+          "id": "1x2aoow1x1P5Di12arrJ9VhdoTE5RJWV-",
+          "name": "DEV_BATCH_01_anh.png",
+          "mime": "image/png",
+          "bytes": 3441,
+          "sha256": "8c858a05d18d4714652442987dfacc53a0ed2f7ae9236d878dc9da2be182ddd7"
+        },
+        {
+          "id": "1N1Ef1zJNLGY9HkxAEczOWwdA54orcaJ-",
+          "name": "DEV_BATCH_02_anh.png",
+          "mime": "image/png",
+          "bytes": 3504,
+          "sha256": "e0fa232ed4dddcf02838eec43cbedbea5fb277588980f261c389be019393f9d6"
+        }
+      ]
+    },
+    {
+      "case": "multiple-videos",
+      "student_id": "cc8da7ad-c5c3-4ed3-b6f9-631ca5bafed7",
+      "student": "Đặng Ngọc Đức",
+      "folder_id": "1de3nNQaB5IE4n8koI8eF2lpc6LUk0tVt",
+      "files": [
+        {
+          "id": "1j-s7Ro3brxlH_XNoz6P9Gz8QcTZ7xE3l",
+          "name": "DEV_BATCH_03_video.mp4",
+          "mime": "video/mp4",
+          "bytes": 1128375,
+          "sha256": "0cd83d944a6ca7822b4a8306cecc60a36e859b041f6702c6a1ad9ead78924451"
+        },
+        {
+          "id": "1TD2aQfvKP1STnT5L0s1eP2sMsEE7n6rc",
+          "name": "DEV_BATCH_04_video.mp4",
+          "mime": "video/mp4",
+          "bytes": 1128375,
+          "sha256": "0cd83d944a6ca7822b4a8306cecc60a36e859b041f6702c6a1ad9ead78924451"
+        }
+      ]
+    },
+    {
+      "case": "mixed-images-videos",
+      "student_id": "97c4e0fc-c5e2-4948-887e-615f3cde9106",
+      "student": "Đặng Phương Dung",
+      "folder_id": "1t7Q05wNttCWbX7nizccDrVoKx5Pm8AmE",
+      "files": [
+        {
+          "id": "1dM2r3yfX_cvfW7daz4vIUd9qPtWXP7av",
+          "name": "DEV_BATCH_01_anh.png",
+          "mime": "image/png",
+          "bytes": 3441,
+          "sha256": "8c858a05d18d4714652442987dfacc53a0ed2f7ae9236d878dc9da2be182ddd7"
+        },
+        {
+          "id": "1LH8xYK6QNldX6yvXUydNpMcd2YsoyHmw",
+          "name": "DEV_BATCH_02_anh.png",
+          "mime": "image/png",
+          "bytes": 3504,
+          "sha256": "e0fa232ed4dddcf02838eec43cbedbea5fb277588980f261c389be019393f9d6"
+        },
+        {
+          "id": "1-aYeak8emZcg9nkRLbmj-KDYL2q5Zu1_",
+          "name": "DEV_BATCH_03_video.mp4",
+          "mime": "video/mp4",
+          "bytes": 1128375,
+          "sha256": "0cd83d944a6ca7822b4a8306cecc60a36e859b041f6702c6a1ad9ead78924451"
+        },
+        {
+          "id": "1Nn0_cH6CLtZcCLWsHnUsyzn-uX3B7Ygk",
+          "name": "DEV_BATCH_04_video.mp4",
+          "mime": "video/mp4",
+          "bytes": 1128375,
+          "sha256": "0cd83d944a6ca7822b4a8306cecc60a36e859b041f6702c6a1ad9ead78924451"
+        }
+      ]
+    }
+  ],
+  "syncs": [
+    {
+      "pass": 1,
+      "result": {
+        "count": 13
+      },
+      "statuses": [
+        {
+          "case": "multiple-images",
+          "status": "timing_unknown",
+          "files": 2
+        },
+        {
+          "case": "multiple-videos",
+          "status": "timing_unknown",
+          "files": 2
+        },
+        {
+          "case": "mixed-images-videos",
+          "status": "timing_unknown",
+          "files": 4
+        }
+      ]
+    },
+    {
+      "pass": 2,
+      "result": {
+        "count": 13
+      },
+      "statuses": [
+        {
+          "case": "multiple-images",
+          "status": "timing_unknown",
+          "files": 2
+        },
+        {
+          "case": "multiple-videos",
+          "status": "timing_unknown",
+          "files": 2
+        },
+        {
+          "case": "mixed-images-videos",
+          "status": "timing_unknown",
+          "files": 4
+        }
+      ]
+    }
+  ],
+  "video_note": "Two distinct Drive files use the same CC0 flower.mp4 source clip."
+}
