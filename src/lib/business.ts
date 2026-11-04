@@ -9,7 +9,7 @@ import {
   inside,
   FOLDER,
   excluded,
-  submissionFiles,
+  submissionFilesByFolder,
   fileLink,
   assertEnvironmentRoot,
   saveFeedbackText,
@@ -439,6 +439,7 @@ export async function mutate(action: string, raw: unknown, operationId: string) 
 export async function syncAssignment(assignmentId: string, operationId: string) {
   return withLock(`sync:${assignmentId}`, async () => {
     const started = new Date().toISOString();
+    let initialData: Data | undefined;
     await transaction(`${operationId}_start`, { assignmentId }, (data) => {
       const { assignment } = assignmentContext(data, assignmentId);
       data.SyncLogs.push({
@@ -451,10 +452,11 @@ export async function syncAssignment(assignmentId: string, operationId: string) 
         status: 'running',
         message: '',
       });
+      initialData = structuredClone(data);
       return { id: operationId };
     });
     // Drive traversal is read-only and must not hold the Sheets writer mutex.
-    const work = await loadData();
+    const work = initialData || (await loadData());
     const scope = (data: Data) => {
       const { assignment, session, cls } = assignmentContext(data, assignmentId);
       return JSON.stringify([
@@ -513,6 +515,10 @@ export async function syncAssignment(assignmentId: string, operationId: string) 
       );
       let count = 0;
       const used = new Map<string, string>();
+      const roots = work.DriveMappings.filter(
+        (m) => m.assignment_id === assignmentId && m.kind === 'folder',
+      ).map((m) => m.drive_id);
+      const scanned = await submissionFilesByFolder(roots, deadline, ignored);
       for (const student of students) {
         const mappings = work.DriveMappings.filter(
           (m) =>
@@ -528,7 +534,7 @@ export async function syncAssignment(assignmentId: string, operationId: string) 
           invariant(root, 'Không tìm thấy folder học viên trong buổi học. Đồng bộ lại.');
           invariant(!excluded(root), 'Ánh xạ đang trỏ tới mục nhận xét GV.');
           for (const f of mapping.kind === 'folder'
-            ? await submissionFiles(mapping.drive_id, deadline, ignored)
+            ? scanned.get(mapping.drive_id) || []
             : [root]) {
             if (ignored.has(f.id)) continue;
             invariant(

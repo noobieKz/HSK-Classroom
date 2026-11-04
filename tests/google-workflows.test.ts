@@ -11,7 +11,7 @@ import { transaction, loadData } from '../src/lib/sheets';
 import { mutate, syncAssignment } from '../src/lib/business';
 import { accessToken } from '../src/lib/google';
 import { initUpload, uploadChunk, uploadStatus, reconcileUpload } from '../src/lib/uploads';
-import { FOLDER, excluded, saveFeedbackText } from '../src/lib/drive';
+import { FOLDER, excluded, saveFeedbackText, submissionFilesByFolder } from '../src/lib/drive';
 import { assertEnvironmentRoot } from '../src/lib/drive';
 import { classroomRoster, studentFolderNames } from '../src/lib/roster';
 
@@ -515,6 +515,78 @@ test('Teacher can grade and confirm submission time while Drive scan is in fligh
       await sync;
       global.fetch = original;
     }
+  }));
+
+test('Batched Drive reads keep owners across pages and nested folders and skip feedback/shortcuts', async () =>
+  withGoogle(async (mock) => {
+    mock.files.folder_student02 = {
+      id: 'folder_student02',
+      name: 'B',
+      mimeType: FOLDER,
+      parents: ['folder_session_01'],
+    };
+    mock.files.file_student02 = {
+      id: 'file_student02',
+      name: 'b.pdf',
+      mimeType: 'application/pdf',
+      parents: ['folder_student02'],
+    };
+    mock.files.nested_folder01 = {
+      id: 'nested_folder01',
+      name: 'Bài thêm',
+      mimeType: FOLDER,
+      parents: ['folder_student01'],
+    };
+    mock.files.nested_file_001 = {
+      id: 'nested_file_001',
+      name: 'a-extra.pdf',
+      mimeType: 'application/pdf',
+      parents: ['nested_folder01'],
+    };
+    mock.files.shortcut_file01 = {
+      id: 'shortcut_file01',
+      name: 'shortcut',
+      mimeType: 'application/vnd.google-apps.shortcut',
+      parents: ['folder_student01'],
+    };
+    const queries: string[][] = [];
+    const original = global.fetch;
+    global.fetch = (async (input: any, options: any) => {
+      const url = new URL(String(input));
+      if (url.pathname !== '/drive/v3/files') return original(input, options);
+      const parents = [...url.searchParams.get('q')!.matchAll(/'([^']+)' in parents/g)].map(
+        (m) => m[1],
+      );
+      queries.push(parents);
+      const files = Object.values(mock.files).filter(
+        (f) => !f.trashed && f.parents?.some((p: string) => parents.includes(p)),
+      );
+      return Response.json(
+        parents.length === 2
+          ? url.searchParams.has('pageToken')
+            ? { files: files.slice(2) }
+            : { files: files.slice(0, 2), nextPageToken: 'second' }
+          : { files },
+      );
+    }) as typeof fetch;
+    const result = await submissionFilesByFolder(
+      ['folder_student01', 'folder_student02'],
+      Date.now() + 5000,
+    );
+    assert.deepEqual(
+      result
+        .get('folder_student01')!
+        .map((f) => f.id)
+        .sort(),
+      ['submission_file01', 'nested_file_001'].sort(),
+    );
+    assert.deepEqual(
+      result.get('folder_student02')!.map((f) => f.id),
+      ['file_student02'],
+    );
+    assert.equal(queries.length, 3);
+    assert.deepEqual(queries[0], ['folder_student01', 'folder_student02']);
+    assert.ok(!queries.flat().includes('folder_feedback01'));
   }));
 
 test('Drive pagination, repeat sync, feedback exclusions and failure preservation', async () =>

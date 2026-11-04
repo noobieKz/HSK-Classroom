@@ -1,0 +1,64 @@
+﻿{
+  "environment": "development",
+  "before": {
+    "dev_only": true,
+    "phase": "before",
+    "elapsed_ms": 10707,
+    "calls": {
+      "drive-metadata": {
+        "count": 5,
+        "ms": 2076
+      },
+      "sheets-read": {
+        "count": 3,
+        "ms": 1376
+      },
+      "sheets-schema": {
+        "count": 2,
+        "ms": 619
+      },
+      "sheets-write": {
+        "count": 2,
+        "ms": 1791
+      },
+      "drive-list": {
+        "count": 13,
+        "ms": 4640
+      }
+    },
+    "result": {
+      "count": 2
+    }
+  },
+  "http_after_ms": 5222,
+  "after": {
+    "dev_only": true,
+    "phase": "after",
+    "elapsed_ms": 6355,
+    "calls": {
+      "drive-metadata": {
+        "count": 4,
+        "ms": 1599
+      },
+      "sheets-read": {
+        "count": 2,
+        "ms": 830
+      },
+      "sheets-schema": {
+        "count": 2,
+        "ms": 609
+      },
+      "sheets-write": {
+        "count": 2,
+        "ms": 1783
+      },
+      "drive-list": {
+        "count": 2,
+        "ms": 857
+      }
+    },
+    "result": {
+      "count": 2
+    }
+  }
+}

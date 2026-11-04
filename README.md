@@ -32,6 +32,8 @@ Quy tắc tên hiện tại: chỉ nhập **số buổi và ngày học**, serve
 
 ## Chạy local
 
+Đồng bộ Drive đọc chung nhiều folder học viên trong một truy vấn, tiếp tục phân trang và duyệt folder con theo nhóm. Snapshot Sheets đã đọc ở đầu thao tác được dùng cho bước quét; bước ghi cuối vẫn đọc lại dữ liệu hiện tại để giữ các nhận xét đang được sửa đồng thời. Đo DEV ngày 04/11: 25 → 12 lượt gọi Google, 10,7 → 6,4 giây trong cùng benchmark; một lần gọi HTTP thực tế sau tối ưu là 5,2 giây. Thời gian thực tế phụ thuộc phản hồi Google và kích thước cây Drive.
+
 Link `Nhan_xet.txt` trong form đọc trực tiếp nội dung hiện tại từ Drive qua API có đăng nhập và header `no-store`, kèm phiên bản trên URL. Dùng link này để xem bản mới nhất sau khi sửa; link **Mở trên Drive** vẫn có sẵn để mở file gốc.
 
 Form chấm bài có ô **File đính kèm** ngay dưới nhận xét. Khi bấm **Lưu nhận xét và file**, nhận xét được lưu trước, popup đóng và file tiếp tục tải ở khung góc phải. Có thể **Thu nhỏ / Mở rộng** khung tiến độ, chuyển màn hình hoặc chấm học viên khác trong cùng tab. Mỗi file giữ cố định review/học viên đích; tải lỗi có nút **Thử lại** để hỏi lại offset và tiếp tục phiên cũ. Giữ tab và phiên đăng nhập mở trong khi tải; tải lại/đóng tab sẽ mất file đang giữ trong bộ nhớ trình duyệt. Upload xong, Nhan_xet.txt cập nhật link đính kèm và vẫn giữ một file nhận xét duy nhất.

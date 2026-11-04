@@ -2,6 +2,10 @@
 
 Ngày 03/11/2026, theo hai URL chủ tài khoản xác nhận mới nhất.
 
+**Tối ưu đồng bộ 04/11/2026:** trước sửa, một lần đồng bộ DEV mất 10.707 ms với 25 lượt gọi Google: 13 list folder (4.640 ms), 5 đọc metadata Drive, 3 đọc Sheets, 2 đọc schema và 2 ghi Sheets. Sau sửa: 6.355 ms, 12 lượt gọi; list folder còn 2 và đọc Sheets còn 2. Gọi HTTP thật `/api/app` action sync sau tối ưu đo được 5.222 ms và vẫn nhận đúng 2 bài nộp mẫu. Đây là các lần đo thực tế, không phải cam kết độ trễ cố định. Báo cáo tổng hợp ở `sync-performance.json`.
+
+Gộp các parent ID bằng toán tử `or` của [Drive files.list](https://developers.google.com/workspace/drive/api/guides/search-files), giữ phân trang và owner qua từng cấp folder con. Nhan_xet_GV, file giáo viên, shortcut vẫn bị loại. Dùng lại snapshot đầu thao tác thay vì đọc toàn bộ Sheets thêm lần nữa; transaction cuối vẫn đối chiếu scope và merge dữ liệu mới nhất, không ghi đè review/thời điểm nộp được sửa khi quét. 29 tests pass, bao gồm phân trang nhiều học viên và quyền sở hữu file qua folder con; build pass. Không ghi production.
+
 **Upload nền và thu nhỏ (04/11/2026):** upload được giữ ở cấp ứng dụng, tách khỏi popup nhận xét. Sau khi lưu nhận xét, file chuyển vào khung tiến độ cố định góc phải; có Thu nhỏ/Mở rộng/Thử lại, tên học viên trên từng file. Đóng popup và chuyển học viên không hủy upload. Giữ tab và phiên đăng nhập mở, không hứa tiếp tục sau khi đóng/reload tab.
 
 Kiểm thử UI thật: chọn `teacher-background-dev.bin` 8.388.631 byte cho Bùi Danh Thái; popup đóng, tiến độ hiển thị 12%; thu nhỏ khung, mở form và lưu nhận xét mẫu DEV cho Bùi Minh Đức. File tải xong đúng folder Bùi Danh Thái/Nhan_xet_GV, nhận xét của Bùi Minh Đức được lưu riêng và không có link file đính kèm của người thứ nhất. Kết quả `test-results/background-upload-result.json`, ảnh `screenshots/background-feedback-upload.png`. 28 tests và build pass, gồm hàng đợi qua các học viên và tiếp tục sau lỗi không gửi lại byte đã được nhận. File/bài nộp mẫu và nhận xét thử giữ trên DEV để chủ lớp kiểm tra. Production không thay đổi.

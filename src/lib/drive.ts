@@ -31,7 +31,11 @@ export async function getFile(id: string) {
   );
 }
 export async function listFolder(id: string, deadline = Date.now() + 25000) {
-  driveId(id);
+  return listFolders([id], deadline);
+}
+export async function listFolders(ids: string[], deadline = Date.now() + 25000) {
+  invariant(ids.length > 0 && ids.length <= 25, 'Phạm vi đọc thư mục không hợp lệ.');
+  ids.forEach(driveId);
   const result: DriveFile[] = [];
   let pageToken = '';
   do {
@@ -41,7 +45,10 @@ export async function listFolder(id: string, deadline = Date.now() + 25000) {
       422,
     );
     const q = new URLSearchParams({
-      q: `'${id}' in parents and trashed = false`,
+      q:
+        ids.length === 1
+          ? `'${ids[0]}' in parents and trashed = false`
+          : `(${ids.map((id) => `'${id}' in parents`).join(' or ')}) and trashed = false`,
       fields: `nextPageToken,files(${fields})`,
       pageSize: '1000',
       supportsAllDrives: 'true',
@@ -118,6 +125,49 @@ export async function submissionFiles(
       if (excluded(file) || ignored.has(file.id)) continue;
       if (file.mimeType === FOLDER) queue.push(file.id);
       else if (file.mimeType !== 'application/vnd.google-apps.shortcut') result.push(file);
+    }
+  }
+  return result;
+}
+export async function submissionFilesByFolder(
+  roots: string[],
+  deadline: number,
+  ignored = new Set<string>(),
+) {
+  const result = new Map<string, DriveFile[]>(roots.map((id) => [id, []]));
+  let pending = roots.map((id) => ({ id, owner: id }));
+  const seen = new Set<string>();
+  const folderCounts = new Map<string, number>();
+  while (pending.length) {
+    const current = pending.splice(0, 25);
+    for (const folder of current) {
+      invariant(!seen.has(folder.id), 'Phát hiện thư mục Drive trùng lặp.');
+      seen.add(folder.id);
+      const count = (folderCounts.get(folder.owner) || 0) + 1;
+      invariant(count <= 100, 'Phạm vi đồng bộ quá lớn. Chọn thư mục bài tập nhỏ hơn.', 422);
+      folderCounts.set(folder.owner, count);
+    }
+    invariant(Date.now() < deadline, 'Phạm vi đồng bộ quá lớn. Chọn thư mục bài tập nhỏ hơn.', 422);
+    const owners = new Map(current.map((f) => [f.id, f.owner]));
+    const children = await listFolders(
+      current.map((f) => f.id),
+      deadline,
+    );
+    for (const file of children) {
+      if (
+        excluded(file) ||
+        ignored.has(file.id) ||
+        file.mimeType === 'application/vnd.google-apps.shortcut'
+      )
+        continue;
+      const parents = (file.parents || []).filter((parent) => owners.has(parent));
+      invariant(parents.length === 1, 'Không xác định được folder học viên của file Drive.', 409);
+      const owner = owners.get(parents[0])!;
+      if (file.mimeType === FOLDER) pending.push({ id: file.id, owner });
+      else {
+        invariant(result.get(owner)!.length < 2000, 'Phạm vi đồng bộ quá lớn.', 422);
+        result.get(owner)!.push(file);
+      }
     }
   }
   return result;
