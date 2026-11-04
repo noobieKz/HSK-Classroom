@@ -2,7 +2,14 @@ import { sheetStateKey } from '@/lib/sheets';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { login, logout, requireSession, getSession, sameOrigin, csrf } from '@/lib/auth';
-import { googleStatus, disconnectGoogle, googleConfig, callbackUrl, SCOPES } from '@/lib/google';
+import {
+  googleStatus,
+  disconnectGoogle,
+  googleConfig,
+  callbackUrl,
+  SCOPES,
+  googleFetch,
+} from '@/lib/google';
 import {
   loadData,
   sheetConfig,
@@ -54,6 +61,28 @@ export async function GET(request: Request) {
     }
     await requireSession();
     if (action === 'data') return json({ data: await loadData() });
+    if (action === 'review-text') {
+      const data = await loadData();
+      const submission = find(data, 'Submissions', url.searchParams.get('submission_id') || '');
+      const cls = find(data, 'Classes', submission.class_id);
+      const file = data.ReviewFiles.find((f) => f.id === `${submission.id}~text`);
+      invariant(file, 'Chưa có file nhận xét cho bài nộp này.', 404);
+      await assertEnvironmentRoot(cls.root_id);
+      await inside(file.drive_id, cls.root_id, true);
+      const content = await (
+        await googleFetch(
+          `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.drive_id)}?alt=media`,
+        )
+      ).text();
+      return new Response(content, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-store, private, max-age=0',
+          'Content-Disposition': 'inline; filename="Nhan_xet.txt"',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
     if (action === 'drive') {
       const data = await loadData();
       const cls = find(data, 'Classes', url.searchParams.get('class_id') || '');

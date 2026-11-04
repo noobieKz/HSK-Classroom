@@ -32,6 +32,8 @@ Quy tắc tên hiện tại: chỉ nhập **số buổi và ngày học**, serve
 
 ## Chạy local
 
+Link `Nhan_xet.txt` trong form đọc trực tiếp nội dung hiện tại từ Drive qua API có đăng nhập và header `no-store`, kèm phiên bản trên URL. Dùng link này để xem bản mới nhất sau khi sửa; link **Mở trên Drive** vẫn có sẵn để mở file gốc.
+
 Form chấm bài có ô **File đính kèm** ngay dưới nhận xét, chọn nhiều tài liệu/video trước khi lưu. Nút **Lưu nhận xét và file** lưu nhận xét rồi upload theo từng phần vào đúng folder Nhan_xet_GV. Upload xong, Nhan_xet.txt được cập nhật link tải các file; vẫn giữ một file TXT duy nhất. Nếu upload bị gián đoạn, bấm Lưu để tiếp tục phiên cũ, không tạo lại nhận xét đã lưu cho cùng nội dung.
 
 Khi lưu điểm hoặc nhận xét, website tạo/cập nhật duy nhất `Nhan_xet.txt` trong folder học viên → `Nhan_xet_GV`. Sửa giữ nguyên file ID và thay nội dung bằng điểm/nhận xét mới nhất; lịch sử sửa vẫn lưu trong Reviews trên Sheets. Các bản TXT phiên bản cũ do app tạo được chuyển vào thùng rác, dùng lại ID file mới nhất nếu chưa có file chuẩn. File upload thủ công được giữ nguyên. File env thật và `.private` (kể cả bản nén) không được đưa lên GitHub; cấu hình Google/khóa được giữ trên máy hoặc khai báo trên hosting.

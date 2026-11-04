@@ -82,7 +82,7 @@ test(
         if (i === 99) throw new Error('Test server did not become ready.');
       }
       assert.deepEqual(await (await get('bootstrap')).json(), { authenticated: false });
-      for (const action of ['data', 'drive', 'health', 'export'])
+      for (const action of ['data', 'drive', 'health', 'export', 'review-text'])
         assert.equal((await get(action)).status, 401, action);
       assert.equal(
         (

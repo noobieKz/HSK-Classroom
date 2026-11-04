@@ -2,6 +2,8 @@
 
 Ngày 03/11/2026, theo hai URL chủ tài khoản xác nhận mới nhất.
 
+**Đối chiếu nhận xét có `testtt` (04/11/2026):** Sheets phiên bản 18 và nội dung đọc trực tiếp từ Drive cùng có chuỗi `testtt`, liên kết ReviewFiles trỏ đúng review mới nhất. Không thay đổi nhận xét/điểm trong kiểm tra này. Link TXT trên form đã chuyển sang API đọc file hiện tại với `Cache-Control: no-store, private, max-age=0`; giữ thêm link mở file gốc trên Drive. Kiểm thử live xác nhận response bằng chính nội dung Drive, có `testtt`; build và HTTP integration test (bao gồm chặn xem file khi chưa đăng nhập) pass.
+
 **File đính kèm trong form nhận xét (04/11/2026):** chọn nhiều tài liệu/video ngay dưới ô nhận xét, bấm Lưu nhận xét và file. Đã kiểm thử thao tác bằng trình duyệt với `gv-feedback-dev.txt`; upload thực tế vào đúng Nhan_xet_GV của Bùi Danh Thái, có một ReviewFiles tương ứng. Đọc lại Google Drive xác nhận đúng parent và Nhan_xet.txt có link đến file upload, vẫn giữ nguyên ID file TXT và chỉ có một file nhận xét. Báo cáo: `test-results/review-attachment.json`; ảnh: `screenshots/review-form-attachment.png`. Upload gián đoạn được tiếp tục từ phiên cũ; cùng nội dung nhận xét chưa tải xong không tạo thêm review khi bấm Lưu lại. 26 tests và build pass; production không thay đổi.
 
 **Quy tắc nhận xét cập nhật 04/11/2026:** mỗi folder Nhan_xet_GV chỉ có một file tự sinh `Nhan_xet.txt`. Sửa nhận xét cập nhật cùng file ID; lịch sử điểm/nhận xét giữ trên Sheets. Đã gộp các bản TXT cũ trên DEV về ID `1zwV4W4xoThk3DEloGltAb9IWXouNQERu`, chuyển bản sinh tự động dư vào thùng rác và giữ file upload thủ công. Các mô tả `Nhan_xet_vXX.txt` bên dưới là lịch sử trước thay đổi này.

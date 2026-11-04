@@ -1998,10 +1998,26 @@ function Review({
           liệu hoặc video chữa bài.
         </p>
         {data.ReviewFiles.filter((f) => reviews.some((r) => r.id === f.review_id)).map((f) => (
-          <a key={f.id} className="file-link" href={f.url} target="_blank" rel="noreferrer">
-            {f.name}
-            <Icon name="out" />
-          </a>
+          <div key={f.id}>
+            <a
+              className="file-link"
+              href={
+                f.id.endsWith('~text')
+                  ? `/api/app?action=review-text&submission_id=${encodeURIComponent(submission.id)}&v=${latest?.version || 0}`
+                  : f.url
+              }
+              target="_blank"
+              rel="noreferrer"
+            >
+              {f.name}
+              <Icon name="out" />
+            </a>
+            {f.id.endsWith('~text') && (
+              <a className="text-button" href={f.url} target="_blank" rel="noreferrer">
+                Mở trên Drive
+              </a>
+            )}
+          </div>
         ))}
       </div>
       <details className="review-history">
