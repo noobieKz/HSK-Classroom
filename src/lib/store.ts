@@ -111,10 +111,10 @@ export type Lock = { busy: boolean; owner: string; started: number };
 export async function withLock<T>(name: string, fn: () => Promise<T>, waitMs = 0): Promise<T> {
   const key = `lock:${name}`;
   const until = Date.now() + waitMs;
-  let current = await readState<Lock>(key);
+  let current = await readOptionalState<Lock>(key);
   while (current?.value.busy && Date.now() < until) {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    current = await readState<Lock>(key);
+    current = await readOptionalState<Lock>(key);
   }
   if (current?.value.busy)
     throw new AppError(

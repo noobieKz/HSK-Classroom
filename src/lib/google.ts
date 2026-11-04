@@ -80,7 +80,7 @@ export async function saveConnection(code: string, verifier: string) {
     });
     invariant(profile.ok, 'Không xác minh được tài khoản Google.', 502);
     const { email } = await profile.json();
-    const previous = (await readState<GoogleConnection>('google'))?.value;
+    const previous = (await readOptionalState<GoogleConnection>('google'))?.value;
     // Never reuse a refresh token belonging to another Google identity.
     const refresh =
       tokens.refresh_token ||
@@ -96,11 +96,11 @@ export async function saveConnection(code: string, verifier: string) {
   });
 }
 export async function accessToken(): Promise<string> {
-  let entry = (await readState<GoogleConnection>('google'))?.value;
+  let entry = (await readOptionalState<GoogleConnection>('google'))?.value;
   invariant(entry?.refresh && !entry.disconnected, 'Vui lòng kết nối Google trong Cài đặt.', 409);
   if (entry.expires > Date.now() + 60_000) return entry.access;
   return withLock('google', async () => {
-    entry = (await readState<GoogleConnection>('google'))?.value;
+    entry = (await readOptionalState<GoogleConnection>('google'))?.value;
     invariant(entry?.refresh && !entry.disconnected, 'Vui lòng kết nối lại Google.', 401);
     if (entry.expires > Date.now() + 60_000) return entry.access;
     const result = await exchange({ refresh_token: entry.refresh, grant_type: 'refresh_token' });
