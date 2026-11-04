@@ -32,7 +32,7 @@ Quy tắc tên hiện tại: chỉ nhập **số buổi và ngày học**, serve
 
 ## Chạy local
 
-Khi lưu điểm hoặc nhận xét, website tự tạo file `Nhan_xet_v01.txt`, `Nhan_xet_v02.txt`… trong folder học viên → `Nhan_xet_GV`. File chứa họ tên, buổi học, điểm và nhận xét; liên kết theo đúng phiên bản trong ReviewFiles. Có thể upload thêm tài liệu/video vào cùng folder. File env thật và `.private` (kể cả bản nén) không được đưa lên GitHub; cấu hình Google/khóa được giữ trên máy hoặc khai báo trên hosting.
+Khi lưu điểm hoặc nhận xét, website tạo/cập nhật duy nhất `Nhan_xet.txt` trong folder học viên → `Nhan_xet_GV`. Sửa giữ nguyên file ID và thay nội dung bằng điểm/nhận xét mới nhất; lịch sử sửa vẫn lưu trong Reviews trên Sheets. Các bản TXT phiên bản cũ do app tạo được chuyển vào thùng rác, dùng lại ID file mới nhất nếu chưa có file chuẩn. File upload thủ công được giữ nguyên. File env thật và `.private` (kể cả bản nén) không được đưa lên GitHub; cấu hình Google/khóa được giữ trên máy hoặc khai báo trên hosting.
 
 BTVN mỗi buổi: form chỉ có ô **Yêu cầu bài tập** và **Lưu**. Lưu tạo/cập nhật duy nhất `BTVN.txt` (UTF-8) ngay trong folder buổi học, đồng thời lưu nội dung trên Sheets; áp dụng toàn lớp. Sửa giữ nguyên file ID. `BTVN.txt` được loại khỏi bài nộp. DEV đã tạo file cho yêu cầu trước đó ở Buổi 01; không ghi production. Nếu Drive báo lỗi, website không báo lưu thành công.
 

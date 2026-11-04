@@ -2,6 +2,10 @@
 
 Ngày 03/11/2026, theo hai URL chủ tài khoản xác nhận mới nhất.
 
+**Quy tắc nhận xét cập nhật 04/11/2026:** mỗi folder Nhan_xet_GV chỉ có một file tự sinh `Nhan_xet.txt`. Sửa nhận xét cập nhật cùng file ID; lịch sử điểm/nhận xét giữ trên Sheets. Đã gộp các bản TXT cũ trên DEV về ID `1zwV4W4xoThk3DEloGltAb9IWXouNQERu`, chuyển bản sinh tự động dư vào thùng rác và giữ file upload thủ công. Các mô tả `Nhan_xet_vXX.txt` bên dưới là lịch sử trước thay đổi này.
+
+Kiểm thử Google thật ngày 04/11: lưu → sửa nội dung mẫu → đọc lại → khôi phục nội dung ban đầu, cả ba lần trả cùng file ID; metadata xác nhận đúng parent, danh sách Drive xác nhận chỉ có một file nhận xét; ReviewFiles có một liên kết hiện tại, Reviews giữ lịch sử. Kết quả `test-results/review-file.json`: `same_file_after_edit=true`, `file_count=1`. 26 tests tự động, TypeScript và build pass.
+
 **File nhận xét tự động:** lưu điểm/nhận xét tạo TXT theo phiên bản trong folder học viên/Nhan_xet_GV, liên kết ReviewFiles. Đã tạo bù file cho 12 review DEV trước đó, không thay đổi điểm/nội dung. Kiểm thử API thật lưu review mới tạo `Nhan_xet_v13.txt`; đọc metadata xác nhận parent Nhan_xet_GV nằm trực tiếp trong đúng folder Bùi Danh Thái, đọc nội dung xác nhận điểm và nhận xét khớp Sheets. [File đã kiểm chứng](https://drive.google.com/file/d/1zwV4W4xoThk3DEloGltAb9IWXouNQERu/view). 25 tests và build pass. Bản GitHub loại env thật, .private và bản nén private; env local vẫn giữ trên máy.
 
 **Sửa LOCKED khi lưu/chấm bài:** quét Drive chạy ngoài khóa ghi Sheets. Chỉ giữ khóa ngắn khi ghi log/kết quả; ghi đồng thời được xếp hàng tối đa 10 giây phía server, client dùng lại mã thao tác khi cần chờ. Khi nhập thay đổi trong lúc quét, phần merge giữ review và thời điểm nộp mới nhất; đổi nội dung buổi/danh sách khi đang quét thì bỏ kết quả cũ và chờ đồng bộ lại. Không cướp khóa ghi đang chạy.

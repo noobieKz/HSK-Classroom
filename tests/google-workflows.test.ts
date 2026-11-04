@@ -11,7 +11,7 @@ import { transaction, loadData } from '../src/lib/sheets';
 import { mutate, syncAssignment } from '../src/lib/business';
 import { accessToken } from '../src/lib/google';
 import { initUpload, uploadChunk, uploadStatus, reconcileUpload } from '../src/lib/uploads';
-import { FOLDER, excluded } from '../src/lib/drive';
+import { FOLDER, excluded, saveFeedbackText } from '../src/lib/drive';
 import { assertEnvironmentRoot } from '../src/lib/drive';
 import { classroomRoster, studentFolderNames } from '../src/lib/roster';
 
@@ -247,10 +247,16 @@ function googleMock() {
         });
       }
       const parent = query.match(/^'([^']+)' in parents/)?.[1];
-      return json({ files: Object.values(files).filter((f) => f.parents?.includes(parent)) });
+      return json({
+        files: Object.values(files).filter((f) => !f.trashed && f.parents?.includes(parent)),
+      });
     }
     const fileId = url.pathname.split('/').at(-1)!;
-    if (files[fileId]) return json(files[fileId]);
+    if (files[fileId]) {
+      if (options.method === 'PATCH')
+        Object.assign(files[fileId], JSON.parse(String(options.body)));
+      return json(files[fileId]);
+    }
     return json({ error: 'Not found' }, 404);
   };
   return { state, fetch, files };
@@ -346,6 +352,41 @@ test('Homework save creates BTVN.txt, edits the same file, keeps Unicode and use
     );
   }));
 
+test('Feedback text reuses the newest legacy ID, trashes old generated versions and preserves uploads', async () =>
+  withGoogle(async (mock) => {
+    mock.files.legacy_file_01 = {
+      id: 'legacy_file_01',
+      name: 'Nhan_xet_v01.txt',
+      mimeType: 'text/plain',
+      parents: ['folder_feedback01'],
+      appProperties: { tm_feedback: 'true' },
+    };
+    mock.files.legacy_file_02 = {
+      id: 'legacy_file_02',
+      name: 'Nhan_xet_v02.txt',
+      mimeType: 'text/plain',
+      parents: ['folder_feedback01'],
+      appProperties: { tm_feedback: 'true' },
+    };
+    mock.files.manual_file_01 = {
+      id: 'manual_file_01',
+      name: 'Ghi_chu.txt',
+      mimeType: 'text/plain',
+      parents: ['folder_feedback01'],
+    };
+    const first = await saveFeedbackText('folder_feedback01', 'Nội dung mới');
+    assert.equal(first, 'legacy_file_02');
+    assert.equal(mock.files.legacy_file_02.name, 'Nhan_xet.txt');
+    assert.equal(mock.files.legacy_file_01.trashed, true);
+    assert.ok(!mock.files.manual_file_01.trashed);
+    assert.equal(await saveFeedbackText('folder_feedback01', 'Đã chỉnh sửa'), first);
+    assert.equal(mock.files[first].content, 'Đã chỉnh sửa');
+    assert.equal(
+      Object.values(mock.files).filter((f) => !f.trashed && f.name === 'Nhan_xet.txt').length,
+      1,
+    );
+  }));
+
 test('Sheets transaction receipts prevent duplicates, retain zero and reject stale versions', async () =>
   withGoogle(async (mock) => {
     mock.state.data.Submissions.push({
@@ -368,7 +409,7 @@ test('Sheets transaction receipts prevent duplicates, retain zero and reject sta
     assert.equal(mock.state.data.Reviews.length, 1);
     assert.equal(mock.state.data.Reviews[0].score, '0');
     assert.ok(first.file_id);
-    assert.equal(mock.files[first.file_id].name, 'Nhan_xet_v01.txt');
+    assert.equal(mock.files[first.file_id].name, 'Nhan_xet.txt');
     assert.deepEqual(mock.files[first.file_id].parents, ['folder_feedback01']);
     assert.ok(mock.files[first.file_id].content.includes('Điểm: 0/10'));
     assert.ok(mock.files[first.file_id].content.includes(payload.comment));
@@ -379,10 +420,18 @@ test('Sheets transaction receipts prevent duplicates, retain zero and reject sta
       /nội dung khác/,
     );
     await assert.rejects(mutate('review', payload, 'review_test_0002'), /phiên khác/);
-    await mutate('review', { ...payload, expected_version: 1, score: 9 }, 'review_test_0003');
+    const edited = await mutate(
+      'review',
+      { ...payload, expected_version: 1, score: 9, comment: 'Đã sửa nhận xét · 中文' },
+      'review_test_0003',
+    );
     assert.equal(mock.state.data.Reviews.length, 2);
-    assert.equal(mock.state.data.ReviewFiles.length, 2);
-    assert.equal(mock.files[first.file_id].name, 'Nhan_xet_v01.txt');
+    assert.equal(mock.state.data.ReviewFiles.length, 1);
+    assert.equal(edited.file_id, first.file_id);
+    assert.equal(mock.files[first.file_id].name, 'Nhan_xet.txt');
+    assert.ok(mock.files[first.file_id].content.includes('Đã sửa nhận xét · 中文'));
+    assert.ok(mock.files[first.file_id].content.includes('Điểm: 9/10'));
+    assert.equal(mock.state.data.Reviews[0].score, '0');
   }));
 test('Unknown Sheets outcome freezes writes; its receipt permits safe same-operation recovery', async () =>
   withGoogle(async (mock) => {

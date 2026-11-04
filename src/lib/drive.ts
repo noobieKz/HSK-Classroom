@@ -131,6 +131,43 @@ export async function generatedId() {
 export async function saveHomeworkFile(parent: string, requirements: string) {
   return saveTextFile(parent, 'BTVN.txt', requirements, 'homework');
 }
+export async function saveFeedbackText(parent: string, content: string) {
+  await assertEnvironmentRoot(parent);
+  return withLock(`feedback-text:${parent}`, async () => {
+    const children = await listFolder(parent);
+    const canonical = children.filter((f) => f.name === 'Nhan_xet.txt');
+    invariant(canonical.length <= 1, 'Có nhiều file Nhan_xet.txt trong folder nhận xét.', 409);
+    const legacy = children
+      .filter(
+        (f) =>
+          f.mimeType === 'text/plain' &&
+          f.appProperties?.tm_feedback === 'true' &&
+          /^Nhan_xet_v\d+\.txt$/.test(f.name),
+      )
+      .sort((a, b) => Number(b.name.match(/v(\d+)/)?.[1]) - Number(a.name.match(/v(\d+)/)?.[1]));
+    const keep = canonical[0] || legacy[0];
+    if (keep && keep.name !== 'Nhan_xet.txt')
+      await googleJson(
+        `https://www.googleapis.com/drive/v3/files/${driveId(keep.id)}?supportsAllDrives=true&fields=id`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'Nhan_xet.txt' }),
+        },
+      );
+    const fileId = await saveTextFile(parent, 'Nhan_xet.txt', content, 'feedback');
+    for (const file of legacy.filter((f) => f.id !== fileId))
+      await googleJson(
+        `https://www.googleapis.com/drive/v3/files/${driveId(file.id)}?supportsAllDrives=true&fields=id`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trashed: true }),
+        },
+      );
+    return fileId;
+  });
+}
 export async function saveTextFile(
   parent: string,
   name: string,

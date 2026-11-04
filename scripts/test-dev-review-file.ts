@@ -2,7 +2,7 @@ import * as nextEnv from '@next/env';
 import { strict as assert } from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
-import { getFile } from '../src/lib/drive';
+import { getFile, listFolder } from '../src/lib/drive';
 import { googleFetch } from '../src/lib/google';
 async function main() {
   nextEnv.loadEnvConfig(process.cwd());
@@ -48,7 +48,7 @@ async function main() {
   });
   assert.ok(saved.file_id);
   const file = await getFile(saved.file_id);
-  assert.ok(file.name.endsWith('.txt'));
+  assert.equal(file.name, 'Nhan_xet.txt');
   assert.equal(file.parents?.length, 1);
   const parent = await getFile(file.parents![0]);
   assert.equal(parent.name, 'Nhan_xet_GV');
@@ -58,19 +58,50 @@ async function main() {
   ).text();
   assert.ok(text.includes(latest.comment));
   assert.ok(text.includes('Điểm: 8/10'));
+  const editedComment = `${latest.comment}\nKIỂM THỬ DEV: cập nhật cùng file nhận xét.`;
+  const edited = await post('review', {
+    submission_id: submission.id,
+    expected_version: Number(latest.version) + 1,
+    score: Number(latest.score),
+    comment: editedComment,
+  });
+  assert.equal(edited.file_id, file.id);
+  const editedText = await (
+    await googleFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`)
+  ).text();
+  assert.ok(editedText.includes(editedComment));
+  const restored = await post('review', {
+    submission_id: submission.id,
+    expected_version: Number(latest.version) + 2,
+    score: Number(latest.score),
+    comment: latest.comment,
+  });
+  assert.equal(restored.file_id, file.id);
+  const restoredText = await (
+    await googleFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`)
+  ).text();
+  assert.ok(restoredText.includes(latest.comment));
+  assert.ok(!restoredText.includes('KIỂM THỬ DEV: cập nhật cùng file nhận xét.'));
+  const generated = (await listFolder(parent.id)).filter(
+    (f) => f.name === 'Nhan_xet.txt' || /^Nhan_xet_v\d+\.txt$/.test(f.name),
+  );
+  assert.equal(generated.length, 1);
   const after = (await get('data')).data;
   assert.equal(
-    after.ReviewFiles.filter((f: any) => f.review_id === saved.id && f.drive_id === file.id).length,
+    after.ReviewFiles.filter((f: any) => f.review_id === restored.id && f.drive_id === file.id)
+      .length,
     1,
   );
   const report = {
     dev_only: true,
-    review_id: saved.id,
+    review_id: restored.id,
     file_id: file.id,
     name: file.name,
     parent_id: parent.id,
     student_folder_id: fixture.folder_id,
     content_verified: true,
+    same_file_after_edit: true,
+    file_count: generated.length,
     file_url: `https://drive.google.com/file/d/${file.id}/view`,
   };
   await writeFile('test-results/review-file.json', JSON.stringify(report, null, 2));
