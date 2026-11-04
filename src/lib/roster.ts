@@ -7,9 +7,9 @@ export const classroomRoster = [
   'Phạm Lê Khanh',
   'Lê Việt Thái',
   'Nguyễn Đình Quang',
-  'Nguyễn Huy',
+  'Nguyễn Đức Huy',
   'Nguyễn Quang Sáng',
-  'Trung Phạm',
+  'Phạm Đình Trung',
   'Vũ Quang Hiếu',
 ] as const;
 const normalized = (name: string) =>
