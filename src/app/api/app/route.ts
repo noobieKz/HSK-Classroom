@@ -266,12 +266,12 @@ export async function POST(request: Request) {
           name: z
             .string()
             .regex(
-              /^(business|google|login|credentials|upload:[a-zA-Z0-9_-]+|feedback:[a-zA-Z0-9_-]+|sync:[a-zA-Z0-9_-]+)$/,
+              /^(business|google|login|credentials|upload:[a-zA-Z0-9_-]+|feedback:[a-zA-Z0-9_-]+|sync:[a-zA-Z0-9_-]+|text-file:[a-zA-Z0-9_-]+:BTVN\.txt)$/,
             ),
         })
         .parse(body.payload);
       const key = `lock:${p.name}`;
-      const entry = await readState<Lock>(key);
+      const entry = await readOptionalState<Lock>(key);
       invariant(entry?.value.busy, 'Khóa hiện không bận.');
       invariant(
         Date.now() - entry.value.started > 5 * 60000,
