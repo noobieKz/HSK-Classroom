@@ -82,6 +82,9 @@ test(
         if (i === 99) throw new Error('Test server did not become ready.');
       }
       assert.deepEqual(await (await get('bootstrap')).json(), { authenticated: false });
+      const csp = (await fetch(appUrl)).headers.get('content-security-policy');
+      assert.ok(csp, 'Production sends CSP');
+      assert.ok(!csp.includes("'unsafe-eval'"), 'Production must not allow eval for dev debugging');
       for (const action of ['data', 'drive', 'health', 'export', 'review-text'])
         assert.equal((await get(action)).status, 401, action);
       assert.equal(
