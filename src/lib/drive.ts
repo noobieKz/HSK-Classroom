@@ -137,11 +137,17 @@ export async function saveFeedbackText(parent: string, content: string) {
     const children = await listFolder(parent);
     const canonical = children.filter((f) => f.name === 'Nhan_xet.txt');
     invariant(canonical.length <= 1, 'Có nhiều file Nhan_xet.txt trong folder nhận xét.', 409);
+    invariant(
+      !canonical[0]?.appProperties?.tm_upload,
+      'Tên Nhan_xet.txt đang được dùng bởi file upload thủ công. Đổi tên file upload trước khi lưu.',
+      409,
+    );
     const legacy = children
       .filter(
         (f) =>
           f.mimeType === 'text/plain' &&
           f.appProperties?.tm_feedback === 'true' &&
+          !f.appProperties?.tm_upload &&
           /^Nhan_xet_v\d+\.txt$/.test(f.name),
       )
       .sort((a, b) => Number(b.name.match(/v(\d+)/)?.[1]) - Number(a.name.match(/v(\d+)/)?.[1]));

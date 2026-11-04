@@ -48,6 +48,7 @@ async function main() {
           (f) =>
             !(
               reviewIds.has(f.review_id) &&
+              f.id.endsWith('~text') &&
               (f.name === 'Nhan_xet.txt' || /^Nhan_xet_v\d+\.txt$/.test(f.name))
             ),
         );
@@ -64,7 +65,9 @@ async function main() {
           operation_id: randomUUID(),
         });
         const remaining = (await listFolder(parent)).filter(
-          (f) => f.name === 'Nhan_xet.txt' || /^Nhan_xet_v\d+\.txt$/.test(f.name),
+          (f) =>
+            !f.appProperties?.tm_upload &&
+            (f.name === 'Nhan_xet.txt' || /^Nhan_xet_v\d+\.txt$/.test(f.name)),
         );
         assert.equal(remaining.length, 1);
         reports.push({

@@ -387,6 +387,7 @@ export async function mutate(action: string, raw: unknown, operationId: string) 
         (f) =>
           !(
             reviewIds.has(f.review_id) &&
+            f.id.endsWith('~text') &&
             (f.name === 'Nhan_xet.txt' || /^Nhan_xet_v\d+\.txt$/.test(f.name))
           ),
       );

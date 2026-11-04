@@ -370,9 +370,10 @@ test('Feedback text reuses the newest legacy ID, trashes old generated versions 
     };
     mock.files.manual_file_01 = {
       id: 'manual_file_01',
-      name: 'Ghi_chu.txt',
+      name: 'Nhan_xet_v99.txt',
       mimeType: 'text/plain',
       parents: ['folder_feedback01'],
+      appProperties: { tm_feedback: 'true', tm_upload: 'manual-upload' },
     };
     const first = await saveFeedbackText('folder_feedback01', 'Nội dung mới');
     assert.equal(first, 'legacy_file_02');
