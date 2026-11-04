@@ -160,6 +160,8 @@ Nếu Google write bị timeout hoặc kết quả chưa rõ, marker bền vữn
 
 ## Kiểm tra dự án
 
+Trong popup chấm bài, phần xem trước hỗ trợ nhiều file của cùng học viên: **Trước / Sau**, bộ đếm, danh sách chọn nhanh và phím **← / →** khi đang chọn khung điều hướng. File được sắp theo tên; chuyển file thay khung Drive để dừng video cũ. Có thể ẩn phần xem trước và mở lại từ từng file. Ảnh/video dùng trình xem Google Drive, cần tài khoản Google có quyền đọc file.
+
 ```bash
 npm run typecheck
 npm test

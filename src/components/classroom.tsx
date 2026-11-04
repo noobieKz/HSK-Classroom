@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import FeedbackUploadDock from './feedback-upload-dock';
+import SubmissionPreview from './submission-preview';
 import { FeedbackUploadQueue } from '@/lib/feedback-upload-queue';
 import {
   Data,
@@ -1913,11 +1914,15 @@ function Review({
   onTime: () => void;
 }) {
   const latest = lastReview(data, submission.id);
-  const [preview, setPreview] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const files = data.SubmissionFiles.filter(
     (f) => f.submission_id === submission.id && f.present === 'true',
+  ).sort(
+    (a, b) =>
+      a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' }) ||
+      a.drive_id.localeCompare(b.drive_id),
   );
+  const [preview, setPreview] = useState(files[0]?.drive_id || '');
   const reviews = data.Reviews.filter((r) => r.submission_id === submission.id).sort(
     (a, b) => Number(b.version) - Number(a.version),
   );
@@ -1928,7 +1933,11 @@ function Review({
           <div key={f.id}>
             <Icon name="file" />
             <strong>{f.name}</strong>
-            <button className="text-button" onClick={() => setPreview(f.drive_id)}>
+            <button
+              className="text-button"
+              aria-pressed={preview === f.drive_id}
+              onClick={() => setPreview(f.drive_id)}
+            >
               Xem trước
             </button>
             <a href={f.url} target="_blank" rel="noreferrer" className="text-button">
@@ -1939,17 +1948,12 @@ function Review({
         ))}
       </div>
       {preview && (
-        <div className="preview">
-          <iframe
-            title="Xem trước bài nộp từ Google Drive"
-            src={`https://drive.google.com/file/d/${encodeURIComponent(preview)}/preview`}
-            allow="fullscreen"
-          />
-          <small>
-            Nếu Drive yêu cầu quyền hoặc không phát được, hãy mở file bằng liên kết Drive phía trên.
-            Ứng dụng không thay đổi chia sẻ file.
-          </small>
-        </div>
+        <SubmissionPreview
+          files={files}
+          selected={preview}
+          onSelect={setPreview}
+          onClose={() => setPreview('')}
+        />
       )}
       <button className="text-button" onClick={onTime}>
         Xác nhận thời điểm nộp{' '}

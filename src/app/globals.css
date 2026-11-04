@@ -1340,6 +1340,57 @@ dialog::backdrop {
   font-size: 10px;
   margin-top: 8px;
 }
+.submission-preview {
+  border: 1px solid #dce5dd;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fafcf9;
+}
+.submission-preview:focus-visible {
+  outline: 2px solid #52785d;
+  outline-offset: 3px;
+}
+.submission-preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.submission-preview-controls .text-button {
+  margin-left: auto;
+}
+.submission-preview-count {
+  min-width: 54px;
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.submission-preview-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+.submission-preview-select select {
+  min-width: 0;
+  width: 100%;
+}
+.submission-preview-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+  margin: 12px 0;
+}
+.submission-preview iframe {
+  width: 100%;
+  height: min(60vh, 520px);
+  border: 0;
+  background: #fff;
+}
 .review > form {
   margin-top: 20px;
 }
