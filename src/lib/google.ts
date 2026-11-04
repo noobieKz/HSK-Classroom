@@ -1,6 +1,6 @@
 import { randomToken } from './crypto';
 import { origin } from './auth';
-import { readState, writeState, withLock } from './store';
+import { readOptionalState, readState, writeState, withLock } from './store';
 import { AppError, invariant } from './errors';
 export const SCOPES = [
   'https://www.googleapis.com/auth/drive',
@@ -30,7 +30,7 @@ export function googleConfig() {
   };
 }
 export async function googleStatus() {
-  const item = await readState<GoogleConnection>('google');
+  const item = await readOptionalState<GoogleConnection>('google');
   return {
     configured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     connected: !!item?.value.refresh && !item.value.disconnected,

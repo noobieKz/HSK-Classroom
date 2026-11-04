@@ -55,6 +55,15 @@ export async function readState<T>(key: string): Promise<Entry<T> | null> {
     throw e;
   }
 }
+// Optional configuration keys may not exist on a new production site. Checking the
+// listing first avoids an upstream Blobs GET that can stall on a missing key.
+export async function readOptionalState<T>(key: string): Promise<Entry<T> | null> {
+  if (driver() === 'netlify') {
+    const entries = await blobs().list({ prefix: key });
+    if (!entries.blobs.some((entry) => entry.key === key)) return null;
+  }
+  return readState<T>(key);
+}
 export async function writeState(
   key: string,
   value: unknown,

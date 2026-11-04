@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { googleJson } from './google';
-import { readState, writeState, withLock } from './store';
+import { readOptionalState, readState, writeState, withLock } from './store';
 import { digest } from './crypto';
 import { Data, Table, Row, schema, tables, SCHEMA_VERSION, emptyData } from './model';
 import { invariant, AppError } from './errors';
@@ -14,7 +14,7 @@ export function sheetStateKey(name: string) {
 
 type SheetConfig = { id: string; url: string };
 export async function sheetConfig(): Promise<SheetConfig | null> {
-  const saved = (await readState<SheetConfig>(sheetStateKey('sheet-config')))?.value;
+  const saved = (await readOptionalState<SheetConfig>(sheetStateKey('sheet-config')))?.value;
   const id = saved?.id || process.env.GOOGLE_SPREADSHEET_ID;
   return id ? { id, url: `https://docs.google.com/spreadsheets/d/${id}/edit` } : null;
 }
