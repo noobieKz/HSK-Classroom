@@ -172,10 +172,12 @@ function Modal({
   title,
   children,
   close,
+  className,
 }: {
   title: string;
   children: ReactNode;
   close: () => void;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -185,6 +187,7 @@ function Modal({
   return (
     <dialog
       ref={ref}
+      className={className}
       onCancel={close}
       onClick={(e) => {
         if (e.target === e.currentTarget) close();
@@ -1361,6 +1364,7 @@ export default function Classroom() {
       </div>
       {modal && (
         <Modal
+          className={modal.type === 'review' ? 'review-dialog' : undefined}
           title={
             (
               {
@@ -1936,172 +1940,182 @@ function Review({
   );
   return (
     <div className="review">
-      <div className="review-files">
-        {files.map((f) => (
-          <div key={f.id}>
-            <Icon name="file" />
-            <strong>
-              {f.name}
-              <small className="block muted">
-                {f.created_at
-                  ? `Nộp: ${format(f.created_at)} · theo Drive`
-                  : 'Drive chưa cung cấp thời điểm tạo file'}
-              </small>
-            </strong>
-            <button
-              className="text-button"
-              aria-pressed={preview === f.drive_id}
-              onClick={() => setPreview(f.drive_id)}
-            >
-              Xem trước
-            </button>
-            <a href={f.url} target="_blank" rel="noreferrer" className="text-button">
-              Mở Drive
-              <Icon name="out" />
-            </a>
+      <section className="review-preview" aria-label="Bài nộp của học viên">
+        {preview && (
+          <SubmissionPreview
+            files={files}
+            selected={preview}
+            onSelect={setPreview}
+            onClose={() => setPreview('')}
+            formatTime={format}
+          />
+        )}
+        <details className="review-file-list" open={!preview}>
+          <summary>Danh sách file bài nộp ({files.length})</summary>
+          <div className="review-files">
+            {files.map((f) => (
+              <div key={f.id}>
+                <Icon name="file" />
+                <strong>
+                  {f.name}
+                  <small className="block muted">
+                    {f.created_at
+                      ? `Nộp: ${format(f.created_at)} · theo Drive`
+                      : 'Drive chưa cung cấp thời điểm tạo file'}
+                  </small>
+                </strong>
+                <button
+                  className="text-button"
+                  aria-pressed={preview === f.drive_id}
+                  onClick={() => setPreview(f.drive_id)}
+                >
+                  Xem trước
+                </button>
+                <a href={f.url} target="_blank" rel="noreferrer" className="text-button">
+                  Mở Drive
+                  <Icon name="out" />
+                </a>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      {preview && (
-        <SubmissionPreview
-          files={files}
-          selected={preview}
-          onSelect={setPreview}
-          onClose={() => setPreview('')}
-          formatTime={format}
-        />
-      )}
-      <button className="text-button" onClick={onTime}>
-        Điều chỉnh thời điểm nộp{' '}
-        {submission.submitted_at ? `· ${format(submission.submitted_at)}` : '· chưa rõ'}
-      </button>
-      <form
-        key={latest?.id || 'new'}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const fd = new FormData(e.currentTarget);
-          const attachments = selectedFiles;
-          void run(
-            async () => {
-              const payload = {
-                submission_id: submission.id,
-                expected_version: Number(latest?.version || 0),
-                score: val(fd, 'score') === '' ? null : Number(val(fd, 'score')),
-                comment: val(fd, 'comment'),
-              };
-              const result = await request('review', payload);
-              if (attachments.length) {
-                enqueueFiles(
-                  result.id,
-                  data.Students.find((s) => s.id === submission.student_id)?.name || 'Học viên',
-                  attachments,
-                );
-                setSelectedFiles([]);
-                onSaved();
-              }
-            },
-            attachments.length
-              ? 'Đã lưu nhận xét. File đang tải ở góc màn hình; bạn có thể chấm học viên khác.'
-              : 'Đã cập nhật file nhận xét.',
-          );
-        }}
-      >
-        <Field label="Điểm (0–10)" hint="Để trống nếu chỉ ghi nhận xét. Điểm 0 là một điểm hợp lệ.">
-          <input
-            className="score-input"
-            name="score"
-            type="number"
-            min="0"
-            max="10"
-            step="0.1"
-            defaultValue={latest?.score ?? ''}
-          />
-        </Field>
-        <Field label="Nhận xét">
-          <textarea
-            name="comment"
-            rows={5}
-            maxLength={10000}
-            defaultValue={latest?.comment}
-            placeholder="Ghi nhận điểm tốt và điều học viên cần luyện thêm…"
-          />
-        </Field>
-        <Field
-          label="File đính kèm"
-          hint="Sau khi lưu, file tải ở góc màn hình. Bạn có thể đóng popup để chấm học viên khác."
+        </details>
+      </section>
+      <section className="review-grading" aria-label="Điểm và nhận xét của giáo viên" tabIndex={0}>
+        <button className="text-button" onClick={onTime}>
+          Điều chỉnh thời điểm nộp{' '}
+          {submission.submitted_at ? `· ${format(submission.submitted_at)}` : '· chưa rõ'}
+        </button>
+        <form
+          key={latest?.id || 'new'}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            const attachments = selectedFiles;
+            void run(
+              async () => {
+                const payload = {
+                  submission_id: submission.id,
+                  expected_version: Number(latest?.version || 0),
+                  score: val(fd, 'score') === '' ? null : Number(val(fd, 'score')),
+                  comment: val(fd, 'comment'),
+                };
+                const result = await request('review', payload);
+                if (attachments.length) {
+                  enqueueFiles(
+                    result.id,
+                    data.Students.find((s) => s.id === submission.student_id)?.name || 'Học viên',
+                    attachments,
+                  );
+                  setSelectedFiles([]);
+                  onSaved();
+                }
+              },
+              attachments.length
+                ? 'Đã lưu nhận xét. File đang tải ở góc màn hình; bạn có thể chấm học viên khác.'
+                : 'Đã cập nhật file nhận xét.',
+            );
+          }}
         >
-          <input
-            type="file"
-            multiple
-            aria-label="Chọn nhiều file chữa bài"
-            disabled={busy}
-            onChange={(e) => {
-              setSelectedFiles((previous) => [...previous, ...Array.from(e.target.files || [])]);
-              e.target.value = '';
-            }}
-          />
-          {selectedFiles.map((file, index) => (
-            <span className="review-selected-file" key={`${file.name}-${index}`}>
-              {file.name}{' '}
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                aria-label={`Bỏ file ${file.name}`}
-                onClick={() => setSelectedFiles((files) => files.filter((_, i) => i !== index))}
+          <Field
+            label="Điểm (0–10)"
+            hint="Để trống nếu chỉ ghi nhận xét. Điểm 0 là một điểm hợp lệ."
+          >
+            <input
+              className="score-input"
+              name="score"
+              type="number"
+              min="0"
+              max="10"
+              step="0.1"
+              defaultValue={latest?.score ?? ''}
+            />
+          </Field>
+          <Field label="Nhận xét">
+            <textarea
+              name="comment"
+              rows={5}
+              maxLength={10000}
+              defaultValue={latest?.comment}
+              placeholder="Ghi nhận điểm tốt và điều học viên cần luyện thêm…"
+            />
+          </Field>
+          <Field
+            label="File đính kèm"
+            hint="Sau khi lưu, file tải ở góc màn hình. Bạn có thể đóng popup để chấm học viên khác."
+          >
+            <input
+              type="file"
+              multiple
+              aria-label="Chọn nhiều file chữa bài"
+              disabled={busy}
+              onChange={(e) => {
+                setSelectedFiles((previous) => [...previous, ...Array.from(e.target.files || [])]);
+                e.target.value = '';
+              }}
+            />
+            {selectedFiles.map((file, index) => (
+              <span className="review-selected-file" key={`${file.name}-${index}`}>
+                {file.name}{' '}
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  aria-label={`Bỏ file ${file.name}`}
+                  onClick={() => setSelectedFiles((files) => files.filter((_, i) => i !== index))}
+                >
+                  Bỏ
+                </button>
+              </span>
+            ))}
+          </Field>
+          <button disabled={busy}>{busy ? 'Đang lưu nhận xét…' : 'Lưu nhận xét và file'}</button>
+        </form>
+        <div className="review-upload">
+          <h3>File & video chữa bài</h3>
+          <p className="muted">
+            Lưu nhận xét sẽ tự tạo file TXT trong Nhan_xet_GV của học viên. Bạn có thể tải thêm tài
+            liệu hoặc video chữa bài.
+          </p>
+          {data.ReviewFiles.filter((f) => reviews.some((r) => r.id === f.review_id)).map((f) => (
+            <div key={f.id}>
+              <a
+                className="file-link"
+                href={
+                  f.id.endsWith('~text')
+                    ? `/api/app?action=review-text&submission_id=${encodeURIComponent(submission.id)}&v=${latest?.version || 0}`
+                    : f.url
+                }
+                target="_blank"
+                rel="noreferrer"
               >
-                Bỏ
-              </button>
-            </span>
-          ))}
-        </Field>
-        <button disabled={busy}>{busy ? 'Đang lưu nhận xét…' : 'Lưu nhận xét và file'}</button>
-      </form>
-      <div className="review-upload">
-        <h3>File & video chữa bài</h3>
-        <p className="muted">
-          Lưu nhận xét sẽ tự tạo file TXT trong Nhan_xet_GV của học viên. Bạn có thể tải thêm tài
-          liệu hoặc video chữa bài.
-        </p>
-        {data.ReviewFiles.filter((f) => reviews.some((r) => r.id === f.review_id)).map((f) => (
-          <div key={f.id}>
-            <a
-              className="file-link"
-              href={
-                f.id.endsWith('~text')
-                  ? `/api/app?action=review-text&submission_id=${encodeURIComponent(submission.id)}&v=${latest?.version || 0}`
-                  : f.url
-              }
-              target="_blank"
-              rel="noreferrer"
-            >
-              {f.name}
-              <Icon name="out" />
-            </a>
-            {f.id.endsWith('~text') && (
-              <a className="text-button" href={f.url} target="_blank" rel="noreferrer">
-                Mở trên Drive
+                {f.name}
+                <Icon name="out" />
               </a>
-            )}
-          </div>
-        ))}
-      </div>
-      <details className="review-history">
-        <summary>Lịch sử nhận xét ({reviews.length})</summary>
-        {reviews.map((r) => (
-          <article key={r.id}>
-            <div>
-              <strong>
-                Phiên bản {r.version} · {r.score !== '' ? `${r.score}/10` : 'Chỉ nhận xét'}
-              </strong>
-              <small>
-                {format(r.created_at)} · {r.reviewer}
-              </small>
+              {f.id.endsWith('~text') && (
+                <a className="text-button" href={f.url} target="_blank" rel="noreferrer">
+                  Mở trên Drive
+                </a>
+              )}
             </div>
-            <p className="prewrap">{r.comment || 'Không có nhận xét chữ.'}</p>
-          </article>
-        ))}
-      </details>
+          ))}
+        </div>
+        <details className="review-history">
+          <summary>Lịch sử nhận xét ({reviews.length})</summary>
+          {reviews.map((r) => (
+            <article key={r.id}>
+              <div>
+                <strong>
+                  Phiên bản {r.version} · {r.score !== '' ? `${r.score}/10` : 'Chỉ nhận xét'}
+                </strong>
+                <small>
+                  {format(r.created_at)} · {r.reviewer}
+                </small>
+              </div>
+              <p className="prewrap">{r.comment || 'Không có nhận xét chữ.'}</p>
+            </article>
+          ))}
+        </details>
+      </section>
     </div>
   );
 }
