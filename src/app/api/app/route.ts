@@ -24,7 +24,7 @@ import { mutate, syncAssignment, find } from '@/lib/business';
 import { listFolder, inside, assertEnvironmentRoot } from '@/lib/drive';
 import { environment } from '@/lib/environment';
 import { publicError, invariant } from '@/lib/errors';
-import { readState, writeState, withLock, Lock } from '@/lib/store';
+import { readOptionalState, readState, writeState, withLock, Lock } from '@/lib/store';
 import { randomToken, digest } from '@/lib/crypto';
 import { csv, includedStudents, submissionStatus, statusLabels } from '@/lib/model';
 import { initUpload, uploadStatus, reconcileUpload } from '@/lib/uploads';
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
     if (action === 'health') {
       const [lock, uncertain] = await Promise.all([
         readState<Lock>('lock:business'),
-        readState<{ id: string; at: number; resolved?: boolean }>(
+        readOptionalState<{ id: string; at: number; resolved?: boolean }>(
           sheetStateKey('business-uncertain'),
         ),
       ]);

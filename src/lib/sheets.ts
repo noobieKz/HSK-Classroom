@@ -90,7 +90,7 @@ export async function initializeSheets() {
       return existing;
     }
     // Persist creation intent before calling Google; never silently create another sheet after an unknown outcome.
-    const intent = await readState<{ pending: boolean }>(sheetStateKey('sheet-creation'));
+    const intent = await readOptionalState<{ pending: boolean }>(sheetStateKey('sheet-creation'));
     invariant(
       !intent?.value.pending,
       'Lần tạo Sheets trước chưa xác định kết quả. Tìm file Tuệ Minh Classroom trong Drive và cấu hình GOOGLE_SPREADSHEET_ID.',
@@ -285,7 +285,7 @@ export async function transaction<T>(
   );
 }
 export async function assertCertain() {
-  const entry = await readState<{ id: string; at: number; resolved?: boolean }>(
+  const entry = await readOptionalState<{ id: string; at: number; resolved?: boolean }>(
     sheetStateKey('business-uncertain'),
   );
   if (entry && !entry.value.resolved)
