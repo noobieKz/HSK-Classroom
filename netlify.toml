@@ -5,6 +5,9 @@
 [build.environment]
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
+  # Public origin and technical store label are documented in the repository.
+  # Keep scanning enabled for actual credentials, keys, tokens and allowlists.
+  SECRETS_SCAN_OMIT_KEYS = "APP_URL,TECHNICAL_NAMESPACE"
 
 # Netlify automatically installs the Next.js runtime. Do not use static export.
 # Set runtime secrets using the Netlify UI, never in this file.
