@@ -1,6 +1,6 @@
 import { googleJson, googleFetch } from './google';
 import { invariant } from './errors';
-import { readState, writeState, withLock } from './store';
+import { readOptionalState, writeState, withLock } from './store';
 import { environment } from './environment';
 export const FOLDER = 'application/vnd.google-apps.folder';
 export type DriveFile = {
@@ -267,7 +267,7 @@ export async function saveTextFile(
     let id = matches[0]?.id;
     if (!id) {
       const key = `text-file-intent:${parent}:${name}`;
-      const intent = await readState<{ id: string }>(key);
+      const intent = await readOptionalState<{ id: string }>(key);
       id = intent?.value.id || (await generatedId());
       if (!intent) await writeState(key, { id });
       await googleJson(
@@ -307,7 +307,7 @@ export async function ensureFolder(parent: string, name: string) {
     );
     if (matches.length) return matches[0].id;
     const key = `classroom-folder-intent:${parent}:${name}`;
-    const intent = await readState<{ id: string }>(key);
+    const intent = await readOptionalState<{ id: string }>(key);
     const id = intent?.value.id || (await generatedId());
     if (!intent) await writeState(key, { id });
     await googleJson('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id', {
@@ -341,7 +341,7 @@ export async function feedbackFolder(parent: string) {
       409,
     );
     if (matches.length) return matches[0].id;
-    const intent = (await readState<{ id: string }>(`feedback-folder:${parent}`))?.value;
+    const intent = (await readOptionalState<{ id: string }>(`feedback-folder:${parent}`))?.value;
     const id = intent?.id || (await generatedId());
     if (!intent) await writeState(`feedback-folder:${parent}`, { id });
     await googleJson('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
