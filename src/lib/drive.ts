@@ -2,6 +2,7 @@ import { googleJson, googleFetch } from './google';
 import { invariant } from './errors';
 import { readOptionalState, writeState, withLock } from './store';
 import { environment } from './environment';
+import type { Row } from './model';
 export const FOLDER = 'application/vnd.google-apps.folder';
 export type DriveFile = {
   id: string;
@@ -28,6 +29,27 @@ export const fileLink = (id: string) => `https://drive.google.com/file/d/${drive
 export async function getFile(id: string) {
   return googleJson<DriveFile>(
     `https://www.googleapis.com/drive/v3/files/${driveId(id)}?supportsAllDrives=true&fields=${fields}`,
+  );
+}
+// A 404 can also mean lost access. Only confirmed trash may hide a session.
+export async function sessionFolderStates(sessions: Row[]) {
+  return Promise.all(
+    sessions.map(async (session) => {
+      try {
+        const folder = await getFile(session.folder_id);
+        return {
+          id: session.id,
+          state:
+            folder.trashed === true
+              ? 'trashed'
+              : folder.mimeType === FOLDER
+                ? 'present'
+                : 'unknown',
+        };
+      } catch {
+        return { id: session.id, state: 'unknown' };
+      }
+    }),
   );
 }
 export async function listFolder(id: string, deadline = Date.now() + 25000) {

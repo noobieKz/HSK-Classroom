@@ -6,16 +6,16 @@
 
 Mọi thao tác thực tế, kể cả kiểm thử trên dữ liệu thật, được thực hiện tại website production. Không vận hành localhost như một website thứ hai. Mã nguồn vẫn có thể build và chạy unit/integration test cô lập trên máy, không kết nối dữ liệu thật. Theo quyết định của chủ lớp ngày 04/11/2026, **không tạo Netlify personal access token** cho localhost. Nếu sau này cần localhost ghi chung dữ liệu, phải thiết kế lại hoặc cấp quyền vào cùng kho Netlify Blobs; chỉ đổi Drive/Sheet ID là không an toàn.
 
-Trong **Buổi học & bài tập**, nút **Đồng bộ buổi học từ Drive** đọc các thư mục trực tiếp trong `BVN` của Drive root rồi nhập buổi mới vào Sheets. Tên cần theo mẫu `Buổi 02_05/11/2026` với ngày hợp lệ. Folder có cùng ID đã nhập sẽ được giữ nguyên hoặc cập nhật tên/ngày nếu đổi tên trên Drive. Folder trùng tên buổi nhưng khác ID, hoặc tên không đúng mẫu, được báo để kiểm tra và không tự chọn. Folder đã vào Thùng rác không xuất hiện trong lần quét; bản ghi buổi học cũ trong Sheets vẫn được giữ và có cảnh báo. Đồng bộ này không tạo bài tập, không xóa dữ liệu và không sửa file Drive.
+Trong **Buổi học & bài tập**, nút **Đồng bộ buổi học từ Drive** đọc các thư mục trực tiếp trong `BVN` của Drive root rồi nhập buổi mới vào Sheets. Tên cần theo mẫu `Buổi 02_05/11/2026` với ngày hợp lệ; cũng nhận ngày/tháng một chữ số như `Buổi 01_1/11/2026`. Folder có cùng ID đã nhập sẽ được giữ nguyên hoặc cập nhật tên/ngày nếu đổi tên trên Drive. Folder trùng tên buổi nhưng khác ID, hoặc tên không đúng mẫu, được báo để kiểm tra và không tự chọn. Khi xác nhận thư mục đã vào Thùng rác, web ẩn buổi và bài tập tương ứng khỏi danh sách thao tác; bản ghi buổi học, điểm và nhận xét trong Sheets vẫn được giữ. Khôi phục đúng thư mục rồi tải lại dữ liệu hoặc đồng bộ để hiện lại. Lỗi Drive, mất quyền truy cập hoặc HTTP 404 không được coi là xác nhận xóa và không làm ẩn buổi. Đồng bộ này không tạo bài tập, không xóa dữ liệu và không sửa file Drive.
 
-| Thành phần | Giá trị thống nhất |
-| --- | --- |
-| Drive root | `1A6QYngslOJiRt7FV9TXE5CI6Uoivf1e8` |
-| Google Sheet | `1PXje-9wVQm_ts3F0j5NWKqIRKB_DJWcp2HQFqemidX4` |
-| `CLASSROOM_ENV` | `production` |
-| `STORAGE_DRIVER` | `netlify` |
-| `TECHNICAL_NAMESPACE` | `tmhsk6c9e4f2a8b1d` |
-| Netlify Site ID | `a21d7b00-801e-476d-939b-7434696dbbc0` |
+| Thành phần            | Giá trị thống nhất                             |
+| --------------------- | ---------------------------------------------- |
+| Drive root            | `1A6QYngslOJiRt7FV9TXE5CI6Uoivf1e8`            |
+| Google Sheet          | `1PXje-9wVQm_ts3F0j5NWKqIRKB_DJWcp2HQFqemidX4` |
+| `CLASSROOM_ENV`       | `production`                                   |
+| `STORAGE_DRIVER`      | `netlify`                                      |
+| `TECHNICAL_NAMESPACE` | `tmhsk6c9e4f2a8b1d`                            |
+| Netlify Site ID       | `a21d7b00-801e-476d-939b-7434696dbbc0`         |
 
 Không cấu hình `STORAGE_DRIVER=file` với dữ liệu production. Storage file tạo khóa ghi và phiên kết nối riêng, dẫn tới ghi đồng thời không được bảo vệ. Mã nguồn chặn cấu hình đó. Không tự tạo Sheet mới hoặc namespace mới để “sửa” lỗi kết nối; việc này sẽ tách dữ liệu và phiên Google.
 

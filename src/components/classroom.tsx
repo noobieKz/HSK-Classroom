@@ -191,6 +191,8 @@ function Modal({
       ref={ref}
       className={className}
       onCancel={(event) => {
+        // Canceling a file picker also dispatches a cancel event from its input.
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         close();
       }}
@@ -329,9 +331,11 @@ export default function Classroom() {
     if (!classId && data?.Classes[0]) setClassId(data.Classes[0].id);
   }, [data, classId]);
   const cls = data?.Classes.find((c) => c.id === classId);
-  const sessions = data?.Sessions.filter((s) => s.class_id === classId) || [];
+  const sessions =
+    data?.Sessions.filter((s) => s.class_id === classId && sessionFolders[s.id] !== 'trashed') ||
+    [];
   useEffect(() => {
-    if (page !== 'sessions' || !classId || !boot?.google?.connected) return;
+    if (!classId || !boot?.google?.connected) return;
     let active = true;
     fetch(`/api/app?action=session-folders&class_id=${encodeURIComponent(classId)}`, {
       cache: 'no-store',
@@ -349,17 +353,27 @@ export default function Classroom() {
           );
       })
       .catch(() => {
-        if (active) setSessionFolders({});
+        if (active) {
+          setSessionFolders({});
+          setError('Không kiểm tra được thư mục Drive. Danh sách buổi học được giữ nguyên.');
+        }
       });
     return () => {
       active = false;
     };
   }, [page, classId, data, boot?.google?.connected]);
+  useEffect(() => {
+    if (sessionId && sessionFolders[sessionId] === 'trashed') {
+      setSessionId('');
+      setAssignmentId('');
+    }
+  }, [sessionId, sessionFolders]);
   const assignments =
     data?.Assignments.filter(
       (a) =>
         a.class_id === classId &&
         a.status === 'active' &&
+        sessionFolders[a.session_id] !== 'trashed' &&
         (!sessionId || a.session_id === sessionId),
     ) || [];
   const assignment = assignments.find((a) => a.id === assignmentId) || assignments[0];
@@ -1087,15 +1101,33 @@ export default function Classroom() {
                   </button>
                 </div>
               </div>
+              {data.Sessions.some(
+                (s) => s.class_id === classId && sessionFolders[s.id] === 'trashed',
+              ) && (
+                <p className="muted">
+                  Đã ẩn{' '}
+                  {
+                    data.Sessions.filter(
+                      (s) => s.class_id === classId && sessionFolders[s.id] === 'trashed',
+                    ).length
+                  }{' '}
+                  buổi có thư mục Drive trong Thùng rác. Lịch sử vẫn được giữ; khôi phục thư mục rồi
+                  tải lại dữ liệu để hiện lại.
+                </p>
+              )}
               {sessionSyncResult &&
-                (sessionSyncResult.ignored.length > 0 || sessionSyncResult.conflicts.length > 0) && (
+                (sessionSyncResult.ignored.length > 0 ||
+                  sessionSyncResult.conflicts.length > 0) && (
                   <div className="card">
                     <strong>Cần kiểm tra trên Drive</strong>
                     {sessionSyncResult.ignored.length > 0 && (
                       <p>Tên không đúng mẫu buổi học: {sessionSyncResult.ignored.join(', ')}.</p>
                     )}
                     {sessionSyncResult.conflicts.length > 0 && (
-                      <p>Thư mục trùng hoặc đã gắn với buổi khác: {sessionSyncResult.conflicts.join(', ')}.</p>
+                      <p>
+                        Thư mục trùng hoặc đã gắn với buổi khác:{' '}
+                        {sessionSyncResult.conflicts.join(', ')}.
+                      </p>
                     )}
                     <p>Không có thư mục hay bản ghi nào bị xóa.</p>
                   </div>
@@ -1117,15 +1149,11 @@ export default function Classroom() {
                               {s.deadline ? `Hạn nộp: ${format(s.deadline)}` : 'Chưa có hạn nộp'} ·{' '}
                               {s.status === 'active' ? 'Đang hoạt động' : 'Đã ngừng'}
                             </p>
-                            {sessionFolders[s.id] === 'missing' && (
-                              <p className="error">
-                                Thư mục Drive của buổi học đã vào Thùng rác hoặc không còn tìm thấy.
-                                Bản ghi buổi học trong Sheets vẫn được giữ. Hãy khôi phục thư mục
-                                từ Thùng rác rồi tải lại dữ liệu.
-                              </p>
-                            )}
                             {sessionFolders[s.id] === 'unknown' && (
-                              <p className="muted">Chưa kiểm tra được thư mục Drive của buổi học.</p>
+                              <p className="error">
+                                Không kiểm tra được thư mục Drive của buổi học. Buổi học vẫn được
+                                giữ trong danh sách.
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1689,7 +1717,11 @@ export default function Classroom() {
                 label="Link hoặc ID thư mục buổi học trên Drive"
                 hint="Dán link thư mục buổi học đã có để dùng lại. Để trống thì web tự tạo thư mục BVN → buổi học → thư mục học viên. Thư mục phải nằm trong Drive root của lớp."
               >
-                <input name="folder_id" required={!!modal.row} defaultValue={modal.row?.folder_id} />
+                <input
+                  name="folder_id"
+                  required={!!modal.row}
+                  defaultValue={modal.row?.folder_id}
+                />
               </Field>
               <Field label="Nội dung buổi học">
                 <textarea
@@ -2124,7 +2156,27 @@ function Review({
           </div>
         </details>
       </section>
-      <section className="review-grading" aria-label="Điểm và nhận xét của giáo viên" tabIndex={0}>
+      <section
+        className="review-grading"
+        aria-label="Điểm và nhận xét của giáo viên"
+        tabIndex={0}
+        onPaste={(event) => {
+          if (busy) return;
+          const images = Array.from(event.clipboardData.files).filter(
+            (file) => file.type.startsWith('image/') && file.size > 0,
+          );
+          if (!images.length) return;
+
+          event.preventDefault();
+          const attachments = images.map(
+            (image) =>
+              new File([image], `Anh-dan-${crypto.randomUUID().slice(0, 8)}-${image.name}`, {
+                type: image.type,
+              }),
+          );
+          setSelectedFiles((previous) => [...previous, ...attachments]);
+        }}
+      >
         <button className="text-button" onClick={onTime}>
           Điều chỉnh thời điểm nộp{' '}
           {submission.submitted_at ? `· ${format(submission.submitted_at)}` : '· chưa rõ'}
@@ -2185,7 +2237,7 @@ function Review({
           </Field>
           <Field
             label="File đính kèm"
-            hint="Sau khi lưu, file tải ở góc màn hình. Bạn có thể đóng popup để chấm học viên khác."
+            hint="Chọn file hoặc bấm Ctrl+V trong ô Nhận xét để đính kèm ảnh đã copy. File bắt đầu tải sau khi lưu."
           >
             <input
               type="file"
@@ -2197,6 +2249,9 @@ function Review({
                 e.target.value = '';
               }}
             />
+            <small className="muted" role="status">
+              {selectedFiles.length > 0 ? `Đã chọn ${selectedFiles.length} file đính kèm.` : ''}
+            </small>
             {selectedFiles.map((file, index) => (
               <span className="review-selected-file" key={`${file.name}-${index}`}>
                 {file.name}{' '}

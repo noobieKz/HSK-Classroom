@@ -11,7 +11,13 @@ import { transaction, loadData } from '../src/lib/sheets';
 import { mutate, syncAssignment, syncSessionsFromDrive } from '../src/lib/business';
 import { accessToken } from '../src/lib/google';
 import { initUpload, uploadChunk, uploadStatus, reconcileUpload } from '../src/lib/uploads';
-import { FOLDER, excluded, saveFeedbackText, submissionFilesByFolder } from '../src/lib/drive';
+import {
+  FOLDER,
+  excluded,
+  saveFeedbackText,
+  submissionFilesByFolder,
+  sessionFolderStates,
+} from '../src/lib/drive';
 import { assertEnvironmentRoot, homeworkFolder, saveHomeworkFile } from '../src/lib/drive';
 import { classroomRoster, studentFolderNames, parseSessionFolderName } from '../src/lib/roster';
 
@@ -230,7 +236,9 @@ function googleMock() {
       if (state.failRead) return json({ error: 'Upstream failed' }, 503);
       const query = url.searchParams.get('q') || '';
       if (query.includes(session.id))
-        return json({ files: Object.values(files).filter((f) => !f.trashed && f.parents?.includes(session.id)) });
+        return json({
+          files: Object.values(files).filter((f) => !f.trashed && f.parents?.includes(session.id)),
+        });
       if (query.includes(student.id)) {
         // Two pages; feedback subtree and app-owned teacher files must be ignored.
         if (!url.searchParams.has('pageToken'))
@@ -328,20 +336,40 @@ test('Drive session sync imports valid folders, updates by ID and keeps rows aft
   withGoogle(async (mock) => {
     assert.equal(parseSessionFolderName('Buổi 02_31/02/2026'), null);
     assert.equal(parseSessionFolderName('Tài liệu'), null);
+    assert.deepEqual(parseSessionFolderName('Buổi 01_1/11/2026'), {
+      number: 1,
+      date: '2026-11-01',
+      name: 'Buổi 01_01/11/2026',
+    });
     mock.files.folder_bvn_0001 = {
-      id: 'folder_bvn_0001', name: 'BVN ', mimeType: FOLDER, parents: ['folder_root_0001'],
+      id: 'folder_bvn_0001',
+      name: 'BVN ',
+      mimeType: FOLDER,
+      parents: ['folder_root_0001'],
     };
     mock.files.folder_import_01 = {
-      id: 'folder_import_01', name: 'Buổi 02_05/11/2026', mimeType: FOLDER, parents: ['folder_bvn_0001'],
+      id: 'folder_import_01',
+      name: 'Buổi 02_05/11/2026',
+      mimeType: FOLDER,
+      parents: ['folder_bvn_0001'],
     };
     mock.files.folder_other_01 = {
-      id: 'folder_other_01', name: 'Tài liệu khác', mimeType: FOLDER, parents: ['folder_bvn_0001'],
+      id: 'folder_other_01',
+      name: 'Tài liệu khác',
+      mimeType: FOLDER,
+      parents: ['folder_bvn_0001'],
     };
     mock.files.folder_duplicate_01 = {
-      id: 'folder_duplicate_01', name: 'Buổi 03_06/11/2026', mimeType: FOLDER, parents: ['folder_bvn_0001'],
+      id: 'folder_duplicate_01',
+      name: 'Buổi 03_06/11/2026',
+      mimeType: FOLDER,
+      parents: ['folder_bvn_0001'],
     };
     mock.files.folder_duplicate_02 = {
-      id: 'folder_duplicate_02', name: 'Buổi 03_06/11/2026', mimeType: FOLDER, parents: ['folder_bvn_0001'],
+      id: 'folder_duplicate_02',
+      name: 'Buổi 03_06/11/2026',
+      mimeType: FOLDER,
+      parents: ['folder_bvn_0001'],
     };
     const first = await syncSessionsFromDrive('class', 'import_sessions_01');
     assert.equal(first.created, 1);
@@ -361,6 +389,28 @@ test('Drive session sync imports valid folders, updates by ID and keeps rows aft
     const afterTrash = await syncSessionsFromDrive('class', 'import_sessions_04');
     assert.equal(afterTrash.created, 0);
     assert.equal(mock.state.data.Sessions.length, 2);
+  }));
+
+test('Session visibility confirms trash, restores by the same ID and preserves history on access errors', async () =>
+  withGoogle(async (mock) => {
+    const sessions = mock.state.data.Sessions;
+    const history = structuredClone(mock.state.data);
+    assert.deepEqual(await sessionFolderStates(sessions), [{ id: 'session', state: 'present' }]);
+    mock.files.folder_session_01.trashed = true;
+    assert.deepEqual(await sessionFolderStates(sessions), [{ id: 'session', state: 'trashed' }]);
+    mock.files.folder_session_01.trashed = false;
+    assert.deepEqual(await sessionFolderStates(sessions), [{ id: 'session', state: 'present' }]);
+    for (const status of [404, 403, 503]) {
+      global.fetch = (async (input, options) => {
+        if (String(input).includes('/files/folder_session_01')) {
+          return new Response(JSON.stringify({ error: 'Unavailable' }), { status });
+        }
+        return mock.fetch(input, options);
+      }) as typeof fetch;
+      assert.deepEqual(await sessionFolderStates(sessions), [{ id: 'session', state: 'unknown' }]);
+    }
+    assert.deepEqual(mock.state.data, history);
+    assert.equal(mock.state.batches, 0);
   }));
 
 test('Homework save creates BTVN.txt, edits the same file, keeps Unicode and uses whole class', async () =>

@@ -48,10 +48,10 @@ export function sessionFolderName(number: number, date: string) {
   return `Buổi ${String(number).padStart(2, '0')}_${day}/${month}/${year}`;
 }
 export function parseSessionFolderName(name: string) {
-  const match = /^Buổi\s+(\d{1,3})_(\d{2})\/(\d{2})\/(\d{4})$/u.exec(name.trim());
+  const match = /^Buổi\s+(\d{1,3})_(\d{1,2})\/(\d{1,2})\/(\d{4})$/u.exec(name.trim());
   if (!match) return null;
   const number = Number(match[1]);
-  const date = `${match[4]}-${match[3]}-${match[2]}`;
+  const date = `${match[4]}-${match[3].padStart(2, '0')}-${match[2].padStart(2, '0')}`;
   try {
     return { number, date, name: sessionFolderName(number, date) };
   } catch {

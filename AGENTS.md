@@ -6,3 +6,13 @@
 - Chủ lớp quyết định không tạo Netlify personal access token; không vận hành localhost để ghi dữ liệu thật. Local chỉ dùng build và test cô lập. Nếu thiếu quyền truy cập Netlify Blobs, dừng; tuyệt đối không fallback sang `file` vì khóa ghi sẽ bị chia tách. Netlify `APP_URL` là URL HTTPS production.
 - Đồng bộ buổi học từ Drive chỉ nhập/cập nhật bản ghi Sheets theo folder hợp lệ trong `BVN`; giữ nguyên bản ghi khi folder đã vào Thùng rác. Không tự xóa buổi học, folder, bài tập hay file. Folder trùng tên nhưng khác ID phải báo xung đột, không tự gán lại.
 - Đọc `README.md` trước khi thay đổi cấu hình, chạy script hoặc deploy. `docs/README_2026-11-04_legacy.md` chỉ là lịch sử, không phải nguồn hướng dẫn hiện hành.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
