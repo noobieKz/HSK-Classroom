@@ -25,7 +25,12 @@ import {
 } from './drive';
 import { withLock } from './store';
 import { environment } from './environment';
-import { matchesStudentFolder, studentFolderNames, sessionFolderName, parseSessionFolderName } from './roster';
+import {
+  matchesStudentFolder,
+  studentFolderNames,
+  sessionFolderName,
+  parseSessionFolderName,
+} from './roster';
 import { listFolder, ensureFolder, renameFolder, saveHomeworkFile, homeworkFolder } from './drive';
 
 const id = z.string().min(1).max(160);
@@ -102,13 +107,25 @@ export async function syncSessionsFromDrive(classId: string, operationId: string
   const snapshot = await loadData();
   const cls = find(snapshot, 'Classes', classId);
   await inside(cls.root_id, environment().root, true);
-  const roots = (await listFolder(cls.root_id)).filter((file) => file.name.trim() === 'BVN' && file.mimeType === FOLDER);
+  const roots = (await listFolder(cls.root_id)).filter(
+    (file) => file.name.trim() === 'BVN' && file.mimeType === FOLDER,
+  );
   invariant(roots.length === 1, 'Cần đúng một thư mục BVN trong Drive root.', 409);
   const folders = (await listFolder(roots[0].id)).filter((file) => file.mimeType === FOLDER);
   return transaction(operationId, { action: 'sync-sessions', classId }, (data) => {
     const currentClass = find(data, 'Classes', classId);
-    invariant(currentClass.root_id === cls.root_id, 'Drive root của lớp vừa thay đổi. Tải lại.', 409);
-    const result = { created: 0, updated: 0, unchanged: 0, ignored: [] as string[], conflicts: [] as string[] };
+    invariant(
+      currentClass.root_id === cls.root_id,
+      'Drive root của lớp vừa thay đổi. Tải lại.',
+      409,
+    );
+    const result = {
+      created: 0,
+      updated: 0,
+      unchanged: 0,
+      ignored: [] as string[],
+      conflicts: [] as string[],
+    };
     const names = new Map<string, number>();
     for (const folder of folders) {
       const parsed = parseSessionFolderName(folder.name);
@@ -126,7 +143,8 @@ export async function syncSessionsFromDrive(classId: string, operationId: string
       }
       const sameFolder = data.Sessions.find((row) => row.folder_id === folder.id);
       const sameName = data.Sessions.find(
-        (row) => row.class_id === classId && row.name === parsed.name && row.folder_id !== folder.id,
+        (row) =>
+          row.class_id === classId && row.name === parsed.name && row.folder_id !== folder.id,
       );
       if (sameName || (sameFolder && sameFolder.class_id !== classId)) {
         result.conflicts.push(`${folder.name}: buổi học đã gắn với thư mục khác`);
@@ -509,6 +527,38 @@ export async function mutate(action: string, raw: unknown, operationId: string) 
     }
     invariant(false, 'Chức năng không hợp lệ.');
   });
+}
+export async function syncSession(sessionId: string, operationId: string) {
+  const assignment = await transaction(
+    `${operationId}_assignment`,
+    { action: 'ensure-session-assignment', sessionId },
+    async (data) => {
+      const session = find(data, 'Sessions', sessionId);
+      const cls = find(data, 'Classes', session.class_id);
+      await assertEnvironmentRoot(cls.root_id);
+      await inside(session.folder_id, cls.root_id);
+      const existing = data.Assignments.find(
+        (row) => row.session_id === sessionId && row.status === 'active',
+      );
+      if (existing) return { id: existing.id, created: false };
+      const row = {
+        id: randomUUID(),
+        class_id: cls.id,
+        session_id: session.id,
+        name: 'BTVN',
+        requirements: '',
+        student_ids: '[]',
+        status: 'active',
+        version: '1',
+      };
+      data.Assignments.push(row);
+      return { id: row.id, created: true };
+    },
+  );
+  return {
+    ...(await syncAssignment(assignment.id, `${operationId}_files`)),
+    createdAssignment: assignment.created,
+  };
 }
 export async function syncAssignment(assignmentId: string, operationId: string) {
   return withLock(`sync:${assignmentId}`, async () => {

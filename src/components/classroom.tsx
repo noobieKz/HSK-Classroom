@@ -1243,16 +1243,23 @@ export default function Classroom() {
                   </p>
                 </div>
                 <button
-                  disabled={busy || autoSyncing || !assignment}
+                  disabled={busy || autoSyncing || (!assignment && !sessionId)}
                   onClick={() =>
                     void run(
-                      () => request('sync', { assignment_id: assignment!.id }),
+                      () =>
+                        assignment
+                          ? request('sync', { assignment_id: assignment.id })
+                          : request('sync-session', { session_id: sessionId }),
                       'Đồng bộ hoàn tất.',
                     )
                   }
                 >
                   <Icon name="sync" />
-                  {busy || autoSyncing ? 'Đang đồng bộ…' : 'Đồng bộ Drive'}
+                  {busy || autoSyncing
+                    ? 'Đang đồng bộ…'
+                    : assignment
+                      ? 'Đồng bộ Drive'
+                      : 'Tạo BTVN và đồng bộ Drive'}
                 </button>
               </div>
               <div className="table-toolbar">
@@ -1426,7 +1433,9 @@ export default function Classroom() {
                 </>
               ) : (
                 <Empty title="Chưa có bài tập để chấm">
-                  Thêm buổi học và giao bài tại mục Buổi học & bài tập.
+                  {sessionId
+                    ? 'Bấm “Tạo BTVN và đồng bộ Drive” để tạo bản ghi bài tập trống, rồi quét file trong thư mục học viên của buổi này.'
+                    : 'Chọn một buổi học hoặc giao bài tại mục Buổi học & bài tập.'}
                 </Empty>
               )}
             </section>

@@ -1,14 +1,14 @@
 import { sheetStateKey } from '../src/lib/sheets';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { emptyData, tables, schema, SCHEMA_VERSION, submissionStatus } from '../src/lib/model';
 import { writeState, readState } from '../src/lib/store';
 import { transaction, loadData } from '../src/lib/sheets';
-import { mutate, syncAssignment, syncSessionsFromDrive } from '../src/lib/business';
+import { mutate, syncAssignment, syncSession, syncSessionsFromDrive } from '../src/lib/business';
 import { accessToken } from '../src/lib/google';
 import { initUpload, uploadChunk, uploadStatus, reconcileUpload } from '../src/lib/uploads';
 import {
@@ -46,7 +46,7 @@ async function withGoogle(fn: (mock: ReturnType<typeof googleMock>) => Promise<v
     await fn(mock);
   } finally {
     global.fetch = original;
-    await rm(dir, { recursive: true, force: true });
+    // Keep isolated fixtures; repository policy forbids automatic file deletion.
   }
 }
 function googleMock() {
@@ -726,6 +726,22 @@ test('Batched Drive reads keep owners across pages and nested folders and skip f
     assert.equal(queries.length, 3);
     assert.deepEqual(queries[0], ['folder_student01', 'folder_student02']);
     assert.ok(!queries.flat().includes('folder_feedback01'));
+  }));
+
+test('A session without BTVN creates only a Sheet assignment before scanning Drive', async () =>
+  withGoogle(async (mock) => {
+    mock.state.data.Assignments = [];
+    mock.state.data.DriveMappings = [];
+    const fileCount = Object.keys(mock.files).length;
+    const first = await syncSession('session', 'session_sync_empty_01');
+    assert.deepEqual(first, { count: 1, createdAssignment: true });
+    assert.equal(mock.state.data.Assignments.length, 1);
+    assert.equal(mock.state.data.Assignments[0].requirements, '');
+    assert.equal(mock.state.data.SubmissionFiles[0].drive_id, 'submission_file01');
+    assert.equal(Object.keys(mock.files).length, fileCount);
+    const second = await syncSession('session', 'session_sync_empty_02');
+    assert.deepEqual(second, { count: 1, createdAssignment: false });
+    assert.equal(mock.state.data.Assignments.length, 1);
   }));
 
 test('Drive pagination, repeat sync, feedback exclusions and failure preservation', async () =>

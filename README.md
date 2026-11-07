@@ -8,6 +8,8 @@ Mọi thao tác thực tế, kể cả kiểm thử trên dữ liệu thật, đ
 
 Trong **Buổi học & bài tập**, nút **Đồng bộ buổi học từ Drive** đọc các thư mục trực tiếp trong `BVN` của Drive root rồi nhập buổi mới vào Sheets. Tên cần theo mẫu `Buổi 02_05/11/2026` với ngày hợp lệ; cũng nhận ngày/tháng một chữ số như `Buổi 01_1/11/2026`. Folder có cùng ID đã nhập sẽ được giữ nguyên hoặc cập nhật tên/ngày nếu đổi tên trên Drive. Folder trùng tên buổi nhưng khác ID, hoặc tên không đúng mẫu, được báo để kiểm tra và không tự chọn. Khi xác nhận thư mục đã vào Thùng rác, web ẩn buổi và bài tập tương ứng khỏi danh sách thao tác; bản ghi buổi học, điểm và nhận xét trong Sheets vẫn được giữ. Khôi phục đúng thư mục rồi tải lại dữ liệu hoặc đồng bộ để hiện lại. Lỗi Drive, mất quyền truy cập hoặc HTTP 404 không được coi là xác nhận xóa và không làm ẩn buổi. Đồng bộ này không tạo bài tập, không xóa dữ liệu và không sửa file Drive.
 
+Trong **Bài nộp & chấm bài**, nếu buổi học chưa có bản ghi BTVN, nút **Tạo BTVN và đồng bộ Drive** sẽ tạo một bài tập BTVN với yêu cầu trống trong Sheets, sau đó quét file trong folder học viên. Nút này không tạo hay chỉnh sửa file Drive. Có thể nhập yêu cầu bài tập sau qua **Buổi học & bài tập → Sửa bài tập**. Nếu đã có BTVN, nút **Đồng bộ Drive** chỉ quét lại bài nộp.
+
 | Thành phần            | Giá trị thống nhất                             |
 | --------------------- | ---------------------------------------------- |
 | Drive root            | `1A6QYngslOJiRt7FV9TXE5CI6Uoivf1e8`            |
