@@ -125,6 +125,12 @@ export class FeedbackUploadQueue {
         },
       );
       const next: UploadProgress & { error?: string } = await response.json();
+      if (response.status === 409 && next.error && 'code' in next && next.code === 'LOCKED') {
+        // The prior chunk may already have reached Drive. Query its offset before retrying.
+        progress = await this.dependencies.request('upload-status', { id: progress.id });
+        this.update(job.id, { progress });
+        continue;
+      }
       if (!response.ok)
         throw new Error(next.error || 'Upload chưa hoàn tất. Bấm Thử lại để kiểm tra và tiếp tục.');
       if (next.offset <= progress.offset && !next.complete)

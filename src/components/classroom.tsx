@@ -381,7 +381,7 @@ export default function Classroom() {
     if (page !== 'submissions' || !assignment || busy || modal || !boot?.google?.connected) return;
     let active = true;
     const sync = async () => {
-      if (autoSyncRunning.current) return;
+      if (autoSyncRunning.current || document.visibilityState !== 'visible') return;
       autoSyncRunning.current = true;
       setAutoSyncing(true);
       try {

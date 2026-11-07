@@ -124,3 +124,28 @@ test('Retry queries the old upload offset and does not upload accepted bytes aga
   assert.deepEqual(offsets, [0, 3]);
   assert.equal(bytes, 6);
 });
+test('A transient chunk lock checks Drive offset before sending more bytes', async () => {
+  let offset = 0;
+  const sent: number[] = [];
+  const queue = new FeedbackUploadQueue({
+    csrf: () => 'csrf',
+    request: async (action) => {
+      if (action === 'upload-init')
+        return { id: 'upload-locked', offset: 0, size: 6, chunkSize: 3, complete: false, recorded: false };
+      assert.equal(action, 'upload-status');
+      return { id: 'upload-locked', offset, size: 6, chunkSize: 3, complete: false, recorded: false };
+    },
+    fetch: (async (_url, options) => {
+      const start = Number((options?.headers as Record<string, string>)['x-upload-offset']);
+      sent.push(start);
+      offset = start + (options?.body as Blob).size;
+      if (start === 0)
+        return Response.json({ error: 'Đang có thao tác khác.', code: 'LOCKED' }, { status: 409 });
+      return Response.json({ id: 'upload-locked', offset, size: 6, chunkSize: 3, complete: true, recorded: true });
+    }) as typeof fetch,
+  });
+  queue.enqueue('review-a', 'A', [new File(['123456'], 'a.txt')]);
+  await finished(queue);
+  assert.equal(queue.getSnapshot()[0].status, 'done');
+  assert.deepEqual(sent, [0, 3]);
+});
