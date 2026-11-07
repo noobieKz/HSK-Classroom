@@ -12,7 +12,7 @@ import {
   FOLDER,
   assertEnvironmentRoot,
 } from './drive';
-import { readState, writeState, withLock } from './store';
+import { readOptionalState, readState, writeState, withLock } from './store';
 import { digest } from './crypto';
 import { invariant, AppError } from './errors';
 export const CHUNK_SIZE = 1024 * 1024;
@@ -69,7 +69,9 @@ export async function initUpload(raw: unknown, operationId: string, sessionId: s
   invariant(/^[a-zA-Z0-9_-]{8,100}$/.test(operationId), 'Mã upload không hợp lệ.');
   return withLock(`upload:${operationId}`, async () => {
     const fingerprint = digest(JSON.stringify(p));
-    let record = (await readState<Upload>(`upload:${operationId}`))?.value;
+    // A fresh upload has no receipt yet. On Netlify, a direct GET for a missing
+    // blob can stall until the 30-second function gateway timeout.
+    let record = (await readOptionalState<Upload>(`upload:${operationId}`))?.value;
     if (record)
       invariant(
         record.fingerprint === fingerprint && record.session_id === sessionId,
