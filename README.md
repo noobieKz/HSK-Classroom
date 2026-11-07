@@ -25,7 +25,7 @@ Không cấu hình `STORAGE_DRIVER=file` với dữ liệu production. Storage f
 
 1. Mở `https://hsk-classroom-production.netlify.app`, đăng nhập bằng tài khoản giáo viên trong allowlist. Tạo/sửa/đồng bộ và kiểm tra kết quả ngay trên site này.
 2. Khi sửa mã, dùng `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, `npm run test:integration` trên máy. Bộ test cô lập dùng dữ liệu giả lập, không cần token production.
-3. Push branch `main` để Netlify tự deploy. Chỉ thử giao diện với dữ liệu thật sau khi Netlify báo Published. Giữ các secret trong Netlify; không in, gửi chat hoặc commit.
+3. Push branch `main` chỉ cập nhật mã nguồn; Netlify đang ở trạng thái **Stopped builds** nên không tự build khi có commit. Khi cần phát hành, dùng Netlify CLI build trên máy và deploy thủ công vào đúng site production. Chỉ thử giao diện với dữ liệu thật sau khi Netlify báo Published. Giữ các secret trong Netlify; không in, gửi chat hoặc commit.
 
 `.env.local` cũ trên máy được giữ để tránh mất cấu hình nhưng không dùng để vận hành. Không thêm token hoặc chuyển sang `STORAGE_DRIVER=file` để ép localhost ghi production. Nếu giải mã trạng thái kỹ thuật lỗi trên Netlify, kiểm tra `ENCRYPTION_KEY`; không tạo khóa mới hay xóa state. Nếu không đăng nhập được, kiểm tra `GOOGLE_ALLOWED_EMAILS`, OAuth client và callback.
 
@@ -37,7 +37,7 @@ Luồng lưu nhận xét đã bỏ thao tác đưa các file TXT phiên bản c�
 
 ## Deploy production
 
-Netlify import repository `noobieKz/HSK-Classroom`, branch `main`, build `npm run build`. Site dùng `APP_URL=https://hsk-classroom-production.netlify.app`, các biến trong bảng trên, OAuth credentials, allowlist giáo viên và khóa mã hóa/phiên ổn định. Secret khai báo trong Netlify Environment variables, không đặt trong Git. Git push vào `main` sẽ tự publish; kiểm tra deploy thành công và chạy thử đăng nhập/đọc dữ liệu. Không đổi namespace, khóa mã hóa, Sheet ID hoặc Drive root trong một deploy thông thường.
+Netlify liên kết repository `noobieKz/HSK-Classroom`, branch `main`, build `npm run build`, nhưng **Stopped builds** để không tốn credits khi push. Site dùng `APP_URL=https://hsk-classroom-production.netlify.app`, các biến trong bảng trên, OAuth credentials, allowlist giáo viên và khóa mã hóa/phiên ổn định. Secret khai báo trong Netlify Environment variables, không đặt trong Git. Khi phát hành thủ công, xác nhận đúng Site ID, dùng `netlify build` rồi `netlify deploy --prod` từ thư mục repo đã liên kết; CLI cần đăng nhập Netlify trên máy nhưng không tạo personal access token. Ứng dụng Next.js có API/server functions, vì vậy không upload riêng `dist` hay `.next` như site tĩnh. Kiểm tra deploy thành công và chạy thử đăng nhập/đọc dữ liệu. Không đổi namespace, khóa mã hóa, Sheet ID hoặc Drive root trong một deploy thông thường.
 
 Netlify Blobs dùng strong consistency và conditional writes cho khóa ghi. Dù vậy, mọi lần sửa dữ liệu production cần kiểm tra đúng học viên/buổi học. Không chạy hai thao tác đồng bộ cùng lúc nếu một thao tác đang báo lỗi hoặc cần đối soát. Nếu Google hoặc Sheets timeout, dùng giao diện Cài đặt để đối soát; không gửi lại thao tác với ID mới khi chưa biết kết quả cũ.
 
