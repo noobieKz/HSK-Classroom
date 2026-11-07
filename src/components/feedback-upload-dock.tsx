@@ -53,6 +53,7 @@ export default function FeedbackUploadDock({ queue }: { queue: FeedbackUploadQue
             <div className="feedback-upload-job" key={job.id}>
               <strong>{job.studentName}</strong>
               <span>{job.file.name}</span>
+              <small>Mã upload: {job.progress?.id || job.id}</small>
               <progress
                 aria-label={`Tiến độ ${job.file.name} · ${job.studentName}`}
                 max={job.file.size || 1}

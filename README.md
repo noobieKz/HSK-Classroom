@@ -41,6 +41,8 @@ Netlify liên kết repository `noobieKz/HSK-Classroom`, branch `main`, build `n
 
 Netlify Blobs dùng strong consistency và conditional writes cho khóa ghi. Dù vậy, mọi lần sửa dữ liệu production cần kiểm tra đúng học viên/buổi học. Không chạy hai thao tác đồng bộ cùng lúc nếu một thao tác đang báo lỗi hoặc cần đối soát. Nếu Google hoặc Sheets timeout, dùng giao diện Cài đặt để đối soát; không gửi lại thao tác với ID mới khi chưa biết kết quả cũ.
 
+Upload ảnh nhận xét dùng mã upload riêng và phiên Drive có thể tiếp tục. Nếu bị khóa tạm thời, giữ tab đang mở và bấm **Thử lại** trên cùng file; ứng dụng kiểm tra tiến độ Drive trước khi gửi tiếp. Khóa riêng của upload bị ngắt quá 5 phút có thể tự phục hồi bằng điều kiện phiên bản, còn khóa ghi Sheets vẫn phải đối soát thủ công. Mã upload hiện trong khung tiến độ để phục hồi đúng file; không tạo upload mới khi chưa kiểm tra kết quả cũ.
+
 ## Kiểm tra mã nguồn
 
 ```bash

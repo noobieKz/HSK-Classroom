@@ -153,7 +153,7 @@ export async function initUpload(raw: unknown, operationId: string, sessionId: s
     record.uri = uri;
     await writeState(`upload:${operationId}`, record);
     return safeUpload(record);
-  });
+  }, 10000, true);
 }
 function safeUpload(u: Upload) {
   return {
@@ -271,7 +271,7 @@ export async function uploadStatus(id: string, sessionId: string) {
     if (upload.complete) return upload.recorded ? safeUpload(upload) : finalize(upload);
     invariant(upload.uri, 'Phiên chưa khởi tạo xong. Thử lại Khởi tạo với cùng mã.');
     return protocol(upload, null);
-  });
+  }, 10000, true);
 }
 export async function uploadChunk(id: string, sessionId: string, offset: number, body: Buffer) {
   return withLock(`upload:${id}`, async () => {
@@ -291,7 +291,7 @@ export async function uploadChunk(id: string, sessionId: string, offset: number,
       'Phần upload phải là bội số 256 KB.',
     );
     return protocol(upload, body, offset);
-  });
+  }, 10000, true);
 }
 export async function reconcileUpload(id: string) {
   invariant(/^[a-zA-Z0-9_-]{8,100}$/.test(id), 'Mã upload không hợp lệ.');
@@ -299,5 +299,5 @@ export async function reconcileUpload(id: string) {
     const upload = (await readState<Upload>(`upload:${id}`))?.value;
     invariant(upload, 'Không tìm thấy nhật ký upload.', 404);
     return finalize(upload); // deliberate admin recovery across sessions; no re-upload
-  });
+  }, 10000, true);
 }

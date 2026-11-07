@@ -128,10 +128,24 @@ export async function writeState(
   }
 }
 export type Lock = { busy: boolean; owner: string; started: number };
-export async function withLock<T>(name: string, fn: () => Promise<T>, waitMs = 0): Promise<T> {
+export async function withLock<T>(
+  name: string,
+  fn: () => Promise<T>,
+  waitMs = 0,
+  recoverStaleUpload = false,
+): Promise<T> {
   const key = `lock:${name}`;
   const until = Date.now() + waitMs;
   let current = await readOptionalState<Lock>(key);
+  if (recoverStaleUpload && current?.value.busy) {
+    invariant(name.startsWith('upload:'), 'Chỉ khóa upload được phục hồi tự động.', 500);
+    // Netlify functions end within 60 seconds. The resumable Drive session and
+    // upload receipt make a five-minute-old upload lock safe to resume by ID.
+    if (Date.now() - current.value.started > 5 * 60_000) {
+      await writeState(key, { ...current.value, busy: false }, { onlyIfMatch: current.etag });
+      current = await readOptionalState<Lock>(key);
+    }
+  }
   while (current?.value.busy && Date.now() < until) {
     await new Promise((resolve) => setTimeout(resolve, 100));
     current = await readOptionalState<Lock>(key);
@@ -153,12 +167,12 @@ export async function withLock<T>(name: string, fn: () => Promise<T>, waitMs = 0
   } catch (error) {
     if (error instanceof AppError && error.code === 'LOCKED' && Date.now() < until) {
       await new Promise((resolve) => setTimeout(resolve, 50));
-      return withLock(name, fn, Math.max(0, until - Date.now()));
+      return withLock(name, fn, Math.max(0, until - Date.now()), recoverStaleUpload);
     }
     throw error;
   }
   if (!etag) {
-    if (Date.now() < until) return withLock(name, fn, until - Date.now());
+    if (Date.now() < until) return withLock(name, fn, until - Date.now(), recoverStaleUpload);
     throw new AppError(409, 'Một thao tác khác vừa bắt đầu. Hãy thử lại.', 'LOCKED');
   }
   // No time-based lock stealing: a timed-out Google write may have an unknown outcome.

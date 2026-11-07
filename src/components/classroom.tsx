@@ -243,7 +243,12 @@ export default function Classroom() {
       const key = JSON.stringify({ action, payload });
       let operationId = pending.current.get(key);
       if (!operationId) {
-        operationId = crypto.randomUUID();
+        const uploadKey =
+          action === 'upload-init' && payload && typeof payload === 'object' &&
+          'upload_key' in payload && typeof payload.upload_key === 'string'
+            ? payload.upload_key
+            : '';
+        operationId = uploadKey || crypto.randomUUID();
         pending.current.set(key, operationId);
       }
       let response: Response;
